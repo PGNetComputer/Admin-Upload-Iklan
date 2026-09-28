@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stok Opname Shopee</title>
+<meta name="theme-color" content="#FFF4EC">
+<!--PWA-->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="ikon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script src="config.js"></script>
+<!--/PWA-->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- SheetJS: parser XLSX yang tahan file Shopee (XML rusak sekalipun) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --tomato:#EF5B3A; --tomato2:#D9472A; --ink:#27211E; --muted:#8A7F77; --line:#F0E7DF;
+    --bg:#FFFDFB; --side:#FFF4EC; --soft:#FFF9F4; --card:#FFFFFF;
+    --green:#2DB37A; --greenBg:#DCF3E7; --greenTx:#1B7F53;
+    --up:#1B7F53; --upBg:#DCF3E7; --dn:#C2461F; --dnBg:#FFE8DE;
+    --iScan:#B7791F; --iHour:#2767A8; --iEye:#B8304F; --iPay:#7A55C4;
+    --dOpname:#EF5B3A; --dHarga:#9A5FD6; --dTidak:#E6A117; --dBelum:#3A8FD9;
+    --txt:var(--ink);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#F4EFEA;font-family:'Manrope','Segoe UI',system-ui,sans-serif;color:var(--ink);font-size:14px;line-height:1.45}
+  .app{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh;max-width:1400px;margin:0 auto;background:var(--bg);box-shadow:0 0 40px rgba(120,70,30,.06)}
+  svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;vertical-align:-3px}
+  button{font-family:inherit;cursor:pointer;border:none}
+  input[type=file]{display:none}
+  .hide{display:none!important} .muted{color:var(--muted)} .right{margin-left:auto}
+  .flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+  /* ---------- MENU SAMPING ---------- */
+  aside{background:var(--side);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:3px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .brand{display:flex;align-items:center;gap:10px;margin:0 6px 14px}
+  .brand .lg{width:38px;height:38px;border-radius:11px;background:var(--tomato);display:grid;place-items:center;font-size:19px;box-shadow:0 5px 14px rgba(239,91,58,.3)}
+  .brand b{font-size:15px;display:block;line-height:1.2;font-weight:800}
+  .brand small{color:var(--muted);font-size:11.5px}
+
+  /* kartu sesi */
+  .sess{background:#fff;border:1px solid #F3DCCD;border-radius:14px;padding:12px;margin:0 2px 8px}
+  .sess .sbar{display:flex;gap:4px;margin-bottom:9px}
+  .sess .sbar span{flex:1;height:5px;border-radius:5px;background:#F1E4DA}
+  .sess .sbar span.on{background:var(--tomato)} .sess .sbar span.ok{background:var(--green)}
+  .sess .stt{font-size:12.5px;font-weight:800;line-height:1.3}
+  .sess .sds{font-size:11.5px;color:var(--muted);margin:3px 0 10px;line-height:1.4}
+  .sess .sbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--tomato);color:#fff;border-radius:11px;padding:10px;font-weight:800;font-size:13px;box-shadow:0 5px 12px rgba(239,91,58,.25)}
+  .sess .sbtn:hover{background:var(--tomato2)}
+  .sess .sfile{font-size:11px;color:var(--muted);margin-top:8px;word-break:break-all;line-height:1.4}
+  .sess .spr{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;font-weight:800;margin-top:9px}
+  .sess .sbar2{height:5px;border-radius:5px;background:#F1E4DA;overflow:hidden;margin-top:4px}
+  .sess .sbar2 i{display:block;height:100%;width:0;background:var(--green);transition:.4s}
+
+  .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800;margin:10px 10px 3px}
+  .nav{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:11px;font-weight:600;font-size:13.5px;color:#5a4f48;cursor:pointer;user-select:none;transition:.12s}
+  .nav:hover{background:rgba(255,255,255,.6)}
+  .nav .d{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+  .nav .t{line-height:1.25}
+  .nav .t small{display:block;font-size:11px;font-weight:600;color:#B1846A}
+  .nav .c{margin-left:auto;font-size:12px;font-weight:800;background:#fff;border-radius:8px;padding:2px 8px;color:var(--muted);min-width:24px;text-align:center}
+  .nav .c.ok{background:var(--green);color:#fff;width:22px;height:22px;min-width:22px;padding:0;border-radius:50%;display:grid;place-items:center;font-size:13px}
+  .nav .c.z{background:transparent;color:#C9BDB4}
+  .nav.active{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(150,80,40,.08)}
+  .nav.active .c:not(.ok):not(.z){background:var(--tomato);color:#fff}
+  .nav.active .t small{color:var(--tomato)}
+  .asfoot{margin-top:auto;padding:12px 10px 0;border-top:1px dashed #EBD9CB;font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:8px}
+  .asfoot a{color:var(--muted);text-decoration:none;cursor:pointer;font-weight:600}
+  .asfoot a:hover{color:var(--tomato)}
+  #katalogInfo{line-height:1.5}
+
+  /* ---------- ISI ---------- */
+  main{padding:24px 28px;min-width:0}
+  .vh{margin-bottom:4px}
+  .vh h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-.01em}
+  .subt{display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:var(--dnBg);color:var(--dn);border-radius:9px;padding:5px 11px;font-weight:800;font-size:13.5px}
+  .hint{font-size:13px;color:var(--muted);margin:6px 0 14px}
+  .explain{background:var(--soft);border:1px solid var(--line);border-left:3px solid var(--tomato);border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.55;color:#5a4f48;margin-top:10px}
+  .explain b{color:var(--ink)} .explain .r{display:flex;gap:8px;margin-top:4px}
+  .btn{display:inline-flex;align-items:center;gap:7px;background:var(--tomato);color:#fff;border-radius:12px;padding:12px 18px;font-weight:800;font-size:14.5px;box-shadow:0 6px 14px rgba(239,91,58,.25);transition:.12s}
+  .btn:hover{background:var(--tomato2)} .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#6b5f57;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-weight:700;font-size:14px}
+  .btn-ghost:hover{border-color:#e2cfc0;color:var(--ink)}
+  .btn-sm{padding:6px 10px;font-size:12.5px;border-radius:9px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:16px}
+  .card h3{margin:0 0 10px;font-size:15px;font-weight:800}
+  .note{font-size:12.5px;color:#6b5f57;background:var(--soft);border:1px solid var(--line);border-left:3px solid var(--tomato);padding:9px 12px;border-radius:10px;margin-bottom:12px}
+  .note.warn{border-left-color:var(--dTidak);background:#FFF9EC}
+  .note.ok{border-left-color:var(--green)}
+
+  .empty{border:2px dashed #F2C9B6;background:var(--soft);border-radius:18px;padding:46px 20px;text-align:center;cursor:pointer;transition:.15s;margin-top:10px}
+  .empty:hover,.empty.drag{border-color:var(--tomato);background:#FFF2EA}
+  .empty .ic{width:60px;height:60px;border-radius:18px;background:#FFE5DA;color:var(--tomato);display:grid;place-items:center;margin:0 auto 12px}
+  .empty .ic svg.i{width:28px;height:28px}
+  .empty h3{margin:0 0 6px;font-size:18px}
+  .empty p{margin:0;color:var(--muted);font-size:13.5px}
+  .empty b{color:var(--tomato)}
+  body.drag main{outline:3px dashed var(--tomato);outline-offset:-10px}
+
+  /* tabel */
+  .tbl-wrap{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:auto;max-height:72vh}
+  table{width:100%;border-collapse:collapse;min-width:640px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px;background:#FFF9F4;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1;white-space:nowrap}
+  td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:#FFFBF7}
+  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.num{font-weight:700}
+  td.name{min-width:260px;font-weight:700}
+  td.name .nmw{display:flex;align-items:center;gap:8px}
+  .sub-note{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+  tr.done td{opacity:.55}
+  tr.resolved td{background:#F5FBF7}
+  .chip{display:inline-block;border-radius:8px;padding:4px 9px;font-size:11.5px;font-weight:700;white-space:nowrap}
+  .ch-kos{background:var(--dnBg);color:var(--dn)}
+  .ch-belum{background:#E2EEFB;color:#2767A8}
+  .ch-ok{background:var(--greenBg);color:var(--greenTx)}
+  .ch-pend{background:#FFF1D1;color:#94640A}
+  .ch-skip{background:#F1ECE7;color:#6F6158}
+  .ch-tidak{background:#FFF1D1;color:#A06A00}
+  .ch-pay{background:#EFE8FB;color:#6A45B5}
+  .dir{display:inline-block;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:800;white-space:nowrap}
+  .dir.up{background:var(--upBg);color:var(--up)} .dir.dn{background:var(--dnBg);color:var(--dn)}
+  .act{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap}
+  .act b{color:var(--dn)}
+  .ibs{display:flex;gap:6px;white-space:nowrap}
+  .ib{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:32px;height:32px;padding:0 8px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:700;color:#6b5f57;white-space:nowrap}
+  .ib:hover{border-color:#F5B39C;background:#FFF5EF;color:var(--ink)}
+  .ib.scan{color:var(--iScan)} .ib.hour{color:var(--iHour)} .ib.eye{color:var(--iEye)} .ib.pay{color:var(--iPay)}
+  .cp{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-weight:800;font-size:11.5px;color:#6b5f57;white-space:nowrap;flex-shrink:0}
+  .cp:hover{border-color:#F5B39C}
+  .cp svg.i{width:13px;height:13px}
+  .cp.copied{background:var(--greenBg);color:var(--greenTx);border-color:#A9DFC3}
+  .checkcell{text-align:center;width:48px}
+  input[type=checkbox]{appearance:none;-webkit-appearance:none;width:22px;height:22px;border:2px solid #DCCFC4;border-radius:7px;cursor:pointer;display:inline-grid;place-items:center;margin:0;background:#fff;transition:.12s}
+  input[type=checkbox]:checked{background:var(--green);border-color:var(--green)}
+  input[type=checkbox]:checked::after{content:'✓';color:#fff;font-size:14px;font-weight:800}
+  .empty-row{text-align:center;color:var(--muted);padding:30px!important}
+
+  /* ---------- MODE FOKUS (Stok Opname & Selisih Harga) ---------- */
+  .hf{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr);gap:16px;align-items:start}
+  .hf-main{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px 22px;box-shadow:0 10px 26px rgba(150,80,40,.07)}
+  .hf-step{font-size:12.5px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .hf-step .bar{flex:1;height:7px;background:#F3ECE6;border-radius:7px;overflow:hidden}
+  .hf-step .bar i{display:block;height:100%;background:var(--tomato);border-radius:7px;transition:.3s}
+  .ln{display:flex;gap:14px;align-items:flex-start}
+  .ln + .ln{margin-top:14px}
+  .ln .num{width:28px;height:28px;border-radius:50%;background:var(--tomato);color:#fff;font-weight:800;display:grid;place-items:center;flex-shrink:0;margin-top:6px}
+  .ln .body{flex:1;min-width:0}
+  .cap{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .namebox{display:flex;align-items:center;gap:10px;background:#F9F6F3;border:1px solid var(--line);border-radius:14px;padding:10px 10px 10px 14px}
+  .namebox .nbt{flex:1;min-width:0}.namebox b{display:block;font-size:19px;line-height:1.3;word-break:break-word}
+  .namebox .cp,.pricebox .cp{padding:9px 12px;font-size:13px;border-radius:10px}
+  .namebox .cp svg.i,.pricebox .cp svg.i{width:15px;height:15px}
+  .pricebox{display:flex;align-items:center;gap:12px;background:#FFF1A8;border:2px solid #F5C400;border-radius:14px;padding:10px 10px 10px 16px}
+  .pricebox b{font-size:32px;font-weight:800;letter-spacing:-.02em;flex:1;line-height:1.15}
+  .pricebox .cp{border-color:#EFD36A}
+  .stockbox{display:flex;align-items:center;gap:12px;background:#FFF1A8;border:2px solid #F5C400;border-radius:14px;padding:10px 16px}
+  .stockbox b{font-size:40px;font-weight:800;line-height:1}
+  .stockbox .u{font-size:15px;font-weight:700;color:#8A6A00}
+  .stockbox .dir{margin-left:auto;font-size:13px}
+  .oldline{font-size:13px;color:var(--muted);margin-top:6px}
+  .oldline s{text-decoration-thickness:2px}
+  .oldline b.up{color:#2767A8} .oldline b.dn{color:var(--dn)}
+  .hf-flag{display:inline-block;margin-top:12px;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700}
+  .hf-btns{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;align-items:center}
+  .hf-kbd{font-size:11.5px;color:var(--muted);margin-top:10px}
+  .hf-kbd kbd{background:#F7F2EE;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;font-family:inherit;font-size:11px}
+  .alt{margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .alt .lk{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-weight:700;background:#fff;font-size:12.5px}
+  .alt .lk:hover{background:#FFF9F4}
+  .alt .lk.scan{color:var(--iScan)} .alt .lk.hour{color:var(--iHour)} .alt .lk.eye{color:var(--iEye)} .alt .lk.pay{color:var(--iPay)}
+  .alt .lk svg.i{width:14px;height:14px}
+  .hf-done{text-align:center;padding:30px 10px}
+  .hf-done .big{font-size:44px}
+  .hf-done h3{font-size:20px;margin:8px 0 6px}
+  .hf-list{background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px;max-height:70vh;overflow:auto}
+  .hf-li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;font-size:13px;cursor:pointer}
+  .hf-li:hover{background:#FFF9F4}
+  .hf-li.on{background:#FFF1E8;font-weight:800}
+  .hf-li .p{margin-left:auto;font-weight:800;white-space:nowrap}
+  .hf-li .dot{width:11px;height:11px;border-radius:50%;border:2px solid #DCCFC4;flex-shrink:0}
+  .hf-li.on .dot{border-color:var(--tomato);background:var(--tomato)}
+  .hf-li.ck{color:#A89C93}
+  .hf-li.ck .p{text-decoration:line-through;opacity:.7}
+  .hf-li.ck .dot{border-color:var(--green);background:var(--green)}
+
+  /* pengaturan */
+  .set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:10px}
+  .set-grid label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:600}
+  .set-grid input{width:100%;background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit}
+  .excl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .excl-row:last-child{border-bottom:none}
+  code{background:#FFF1E9;padding:1px 6px;border-radius:5px;font-size:12px}
+  .row{display:flex;flex-wrap:wrap;gap:12px}.col{flex:1;min-width:220px}
+
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2B2320;color:#fff;padding:11px 18px;border-radius:12px;
+         box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:99;opacity:0;transition:.25s;font-size:13px;max-width:90vw;pointer-events:none}
+  .toast.show{opacity:1;bottom:26px}
+  .spin{width:13px;height:13px;border:2px solid rgba(200,150,120,.35);border-top-color:var(--tomato);border-radius:50%;display:inline-block;animation:sp .7s linear infinite;vertical-align:-2px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ---------- LAYAR KECIL ---------- */
+  @media (max-width:900px){ .hf{grid-template-columns:1fr} }
+  @media (max-width:860px){
+    .app{grid-template-columns:1fr}
+    aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:6px;padding:12px}
+    .brand,.sess{width:100%}
+    .grp{display:none}
+    .nav{padding:8px 10px;background:rgba(255,255,255,.5)}
+    .asfoot{width:100%;flex-direction:row;flex-wrap:wrap;border-top:none;padding:6px 4px 0;margin-top:4px}
+    main{padding:16px}
+    .pricebox b{font-size:26px} .stockbox b{font-size:32px}
+  }
+
+  .ch-new{background:#FFF1DC;color:#9A5B00}
+  .newline{margin-top:8px}
+  /* nama katalog kecil agak pudar */
+  .katsub{font-size:11.5px;color:#A89C93;font-weight:500;margin-top:2px;filter:blur(.25px);opacity:.85;line-height:1.3;word-break:break-word}
+  .namebox .katsub{font-size:12.5px;margin-top:3px}
+  .ib.cek{color:#8A7F77;min-width:28px;height:28px;padding:0 6px;border-radius:8px}.ib.cek svg.i{width:14px;height:14px}
+  .ib.cek.big{min-width:36px;height:36px;border-radius:10px}.ib.cek.big svg.i{width:16px;height:16px}
+  .ib.cek:hover,.cp.cek:hover{border-color:var(--tomato);color:var(--tomato)}
+  /* pop-up cek katalog */
+  .ck-shade{position:fixed;inset:0;background:rgba(40,28,20,.38);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+  .ck-shade.hide{display:none}
+  .ck{width:min(560px,100%);background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(40,20,10,.35);overflow:hidden}
+  .ck .mh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .ck .mh .t{font-weight:800;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ck .mh .x{margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);font-weight:800;background:#fff;flex-shrink:0}
+  .ck .upd{font-size:12px;color:var(--muted);padding:8px 20px 0}
+  .ck .upd a{color:var(--tomato);cursor:pointer;font-weight:700}
+  .ck .mb{padding:12px 20px 18px}
+  .ck .verdict{display:flex;gap:14px;align-items:center;border-radius:16px;padding:14px 16px}
+  .ck .verdict .ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:22px;flex-shrink:0;font-weight:800}
+  .ck .verdict b{display:block;font-size:17px}
+  .ck .verdict span{font-size:13px}
+  .ck .v-ok{background:#EFFAF4;border:1.5px solid #A9DFC3}.ck .v-ok .ic{background:var(--green);color:#fff}.ck .v-ok span{color:#1B7F53}
+  .ck .v-warn{background:#FFF8E1;border:1.5px solid #F2D38A}.ck .v-warn .ic{background:#F5B300;color:#fff}.ck .v-warn span{color:#8A6A00}
+  .ck .sec{margin-top:16px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .ck .sec em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:600}
+  .ck .ckk{margin-top:8px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .ck .ckk .ckg{background:#FFF9F4;padding:8px 14px;font-weight:800;font-size:13px;border-bottom:1px solid var(--line)}
+  .ck .ckk .ckr{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:13.5px}
+  .ck .ckk .ckr:last-child{border-bottom:none}
+  .ck .ckk .ckr .nm{flex:1;min-width:0}
+  .ck .ckk .ckr .q{font-weight:800;width:40px;text-align:right}
+  .ck .ckk .ckr .h{width:112px;text-align:right;color:var(--muted);font-weight:600}
+  .ck .ckk .ckr.ghost{background:repeating-linear-gradient(135deg,#FFF3EE,#FFF3EE 8px,#FFFAF7 8px,#FFFAF7 16px);color:#C2461F;font-weight:800;border-top:1.5px dashed #F2B59E;border-bottom:1.5px dashed #F2B59E}
+  .ck .ckk .ckr.ghost .q,.ck .ckk .ckr.ghost .h{color:#C2461F}
+  .ck .ckk .ckr.me{background:#FFF8E1;font-weight:800}
+  .ck .note2{font-size:12.5px;color:var(--muted);margin-top:10px}
+  .ck .mf{display:flex;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:#FFFCFA;flex-wrap:wrap}
+  .ck .btn.g{background:var(--green);box-shadow:0 6px 14px rgba(45,179,122,.25)}
+
+  /* layar memuat */
+  #bootLoad{display:flex;align-items:center;justify-content:center;min-height:70vh}
+  #bootLoad.hide{display:none}
+  .boot{text-align:center;width:min(360px,100%);animation:bfade .4s ease}
+  .boot-logo{position:relative;width:72px;height:72px;margin:0 auto 18px;border-radius:22px;background:linear-gradient(135deg,#FF8A5B,var(--tomato));display:grid;place-items:center;font-size:32px;box-shadow:0 12px 28px rgba(239,91,58,.30)}
+  .boot-logo::before,.boot-logo::after{content:"";position:absolute;inset:-8px;border-radius:28px;border:2px solid rgba(239,91,58,.35);animation:bring 1.8s ease-out infinite}
+  .boot-logo::after{animation-delay:.9s}
+  .boot-logo span{animation:bfloat 1.8s ease-in-out infinite}
+  .boot h3{margin:0 0 14px;font-size:18px;font-weight:800}
+  .boot-bar{height:4px;border-radius:99px;background:#F3E6DC;overflow:hidden;margin:0 auto 18px;width:220px}
+  .boot-bar i{display:block;height:100%;width:40%;border-radius:99px;background:var(--tomato);animation:bslide 1.3s ease-in-out infinite}
+  .boot-steps{list-style:none;margin:0 auto;padding:0;display:inline-flex;flex-direction:column;gap:8px;text-align:left;font-size:13.5px;color:var(--muted)}
+  .boot-steps li{display:flex;align-items:center;gap:9px;transition:color .2s}
+  .boot-steps .st{width:18px;height:18px;display:grid;place-items:center}
+  .boot-steps li.ok{color:var(--ink)}
+  .boot-steps li.ok .st{background:var(--green);color:#fff;border-radius:50%;font-size:11px;font-weight:800}
+  .boot-steps .tx small{color:var(--muted);font-weight:500}
+  @keyframes bring{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+  @keyframes bfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  @keyframes bslide{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}
+  @keyframes bfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* sidebar saat memuat: angka jadi kilau abu */
+  body.booting .nav .c{color:transparent!important;background:linear-gradient(90deg,#F1E6DD 0%,#FBF4EE 50%,#F1E6DD 100%)!important;background-size:200% 100%!important;animation:bshim 1.2s linear infinite;border-color:transparent!important}
+  body.booting .nav .c *{visibility:hidden}
+  body.booting #upBtn{opacity:.55;pointer-events:none}
+  body.booting #result,body.booting #emptyState{display:none!important}
+  @keyframes bshim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* dialog kecil pengganti prompt()/confirm() bawaan browser */
+  .dlg{width:min(420px,100%);margin-top:8vh;animation:bfade .18s ease}
+  .dlg .dh{display:flex;align-items:center;gap:12px;padding:18px 20px 6px}
+  .dlg .dh .di{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;background:#FFF1DC;color:#9A5B00}
+  .dlg .dh .di svg.i{width:20px;height:20px}
+  .dlg .dh .di.red{background:#FDE8E4;color:var(--tomato2)}
+  .dlg .dh b{font-size:16px;line-height:1.3}
+  .dlg .db{padding:6px 20px 16px;font-size:13.5px;color:#5c524b}
+  .dlg .db .nm{display:block;margin:8px 0 12px;padding:9px 12px;background:#F9F6F3;border:1px solid var(--line);border-radius:10px;font-weight:700;color:var(--ink)}
+  .dlg label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .dlg .step{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .dlg .step button{width:42px;height:42px;background:#fff;border:0;font-size:20px;font-weight:700;color:#6b5f57;cursor:pointer}
+  .dlg .step button:hover{background:#FFF3EE;color:var(--tomato)}
+  .dlg .step input{width:64px;height:42px;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);text-align:center;font:800 18px inherit;font-family:inherit;outline:none}
+  .dlg input.tx{width:100%;height:42px;border:1px solid var(--line);border-radius:12px;padding:0 12px;font:inherit;outline:none}
+  .dlg input.tx:focus,.dlg .step:focus-within{border-color:var(--tomato);box-shadow:0 0 0 3px rgba(239,91,58,.12)}
+  .dlg .mf{justify-content:flex-end}
+  .dlg .btn.red{background:var(--tomato2)}
+  .toast .tlink{color:#FFB199;font-weight:800;margin-left:8px;cursor:pointer;text-decoration:underline}
+  .toast.show{pointer-events:auto}
+
+  /* ===== Upload Iklan (scan) ===== */
+  #upView{display:none}
+  body.v-upload #upView{display:block}
+  body.v-upload #result,body.v-upload #emptyState{display:none!important}
+  body.booting #upView{display:none!important}
+  .subt2{color:var(--muted);font-size:13px;margin:-6px 0 16px}
+  .scanbar{display:flex;gap:12px;align-items:center;background:#fff;border:2px solid #F2C9BB;border-radius:18px;padding:10px 12px;transition:.15s}
+  .scanbar.focus{border-color:var(--tomato);box-shadow:0 0 0 5px rgba(239,91,58,.10)}
+  .scanbar.flash-ok{border-color:var(--green);box-shadow:0 0 0 5px rgba(45,179,122,.15)}
+  .scanbar.flash-bad{border-color:#D93A2B;box-shadow:0 0 0 5px rgba(217,58,43,.15);animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .scanbar .sico{width:44px;height:44px;border-radius:12px;background:#FFF1EB;color:var(--tomato);display:grid;place-items:center;flex-shrink:0}
+  .scanbar .sico svg.i{width:24px;height:24px}
+  .scanbar input{flex:1;min-width:0;border:0;outline:none;font-family:inherit;font-size:22px;font-weight:800;letter-spacing:.04em;color:var(--ink);background:transparent}
+  .scanbar input::placeholder{color:#C9BDB3;font-weight:600;letter-spacing:0;font-size:17px}
+  .seg{display:inline-flex;background:#F6EFE9;border-radius:12px;padding:4px;gap:4px;flex-shrink:0}
+  .seg span{padding:8px 12px;border-radius:9px;font-weight:800;font-size:12.5px;color:#8A7F77;white-space:nowrap;cursor:pointer;user-select:none}
+  .seg span.on{background:#fff;color:#C2461F;box-shadow:0 2px 6px rgba(60,40,20,.08)}
+  .scanhint{font-size:12px;color:var(--muted);margin:8px 4px 16px}
+  .scanhint kbd{background:#F3EEE9;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-family:inherit;font-size:11px}
+  .upres{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,1fr);gap:16px;align-items:start}
+  @media(max-width:900px){.upres{grid-template-columns:1fr}.seg span{padding:7px 8px;font-size:11.5px}}
+  .upc{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px 20px}
+  .upc.empty{text-align:center;color:var(--muted);padding:40px 20px}
+  .upc.empty .big{font-size:34px;margin-bottom:6px}
+  .upc .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .upc .kode{font-weight:800;font-size:12px;color:var(--muted);letter-spacing:.05em}
+  .sync{border-radius:8px;padding:3px 9px;font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+  .sync.ok{background:var(--greenBg);color:var(--greenTx)}
+  .sync.wait{background:#F3EEE9;color:#8A7F77}
+  .sync.err{background:#FDE8E4;color:#C2461F}
+  .sync.err a{color:#C2461F;text-decoration:underline;cursor:pointer}
+  .upc h3{margin:4px 0 14px;font-size:19px;line-height:1.3}
+  .upc .ln{display:flex;gap:12px;align-items:center}.upc .ln+.ln{margin-top:9px}
+  .upc .num{width:26px;height:26px;border-radius:50%;background:var(--tomato);color:#fff;font-weight:800;display:grid;place-items:center;flex-shrink:0;font-size:13px}
+  .upc .box{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:#F9F6F3;border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 12px;min-height:46px}
+  .upc .box .k{width:66px;flex-shrink:0;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  .upc .box .v{flex:1;min-width:0;font-weight:700;font-size:15px;word-break:break-word}
+  .upc .box .v.load{color:#B9ADA3;font-weight:600;font-style:italic;font-size:13px}
+  .upc .box.hl{background:#FFF7CF;border-color:#F2D38A}.upc .box.hl .v{font-size:20px;font-weight:800}
+  .upc .info{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap}
+  .upc .btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .upc .donebar{margin-top:14px;background:var(--greenBg);color:var(--greenTx);border-radius:12px;padding:10px 14px;font-weight:800}
+  .ch-mp{background:#FFE8DE;color:#C2461F}.ch-mp.tp{background:#E4F4E4;color:#2F7D32}
+  .ch-warn{background:#FDE8E4;color:#C2461F;white-space:normal}
+  .upq{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .upq .qh{padding:12px 14px;font-weight:800;border-bottom:1px solid var(--line);display:flex;align-items:center;background:#FFF9F4}
+  .upq .qh small{margin-left:auto;color:var(--muted);font-weight:700}
+  .upq .qi{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer}
+  .upq .qi:last-child{border-bottom:none}
+  .upq .qi:hover{background:#FFFAF7}
+  .upq .qi .dot{width:10px;height:10px;border-radius:50%;border:2px solid #DCCFC4;flex-shrink:0}
+  .upq .qi.on{background:#FFF1EB;font-weight:800}.upq .qi.on .dot{background:var(--tomato);border-color:var(--tomato)}
+  .upq .qi.done{color:#A89C93}.upq .qi.done .dot{background:var(--green);border-color:var(--green)}
+  .upq .qi.err .dot{background:#D93A2B;border-color:#D93A2B}
+  .upq .qi .nmq{flex:1;min-width:0}
+  .upq .qi .nmq small{display:block;color:var(--muted);font-weight:600;font-size:11px}
+  .upq .qi .qq{font-weight:800;color:#6b5f57}
+  /* kepala daftar: angka besar + progres */
+  .upq .qh2{padding:12px 14px 6px;display:flex;align-items:baseline;gap:8px;font-weight:800;background:#FFF9F4}
+  .upq .qh2 .big{font-size:22px;color:var(--greenTx);margin-left:auto;line-height:1}
+  .upq .qh2 small{color:var(--muted);font-weight:700;font-size:12px}
+  .upq .qprog{height:6px;background:#F3ECE6;border-radius:6px;overflow:hidden;margin:0 14px 10px}
+  .upq .qprog i{display:block;height:100%;background:var(--green);border-radius:6px;transition:width .3s}
+  .upq .qnote{padding:8px 14px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  /* ikon per baris */
+  .upq .qic{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;font-weight:800;font-size:14px}
+  .upq .qic svg.i{width:15px;height:15px;stroke-width:2.4;vertical-align:0}
+  .upq .qic.ok{background:var(--green);color:#fff;box-shadow:0 3px 8px rgba(45,179,122,.35)}
+  .upq .qic.up{background:#FFEDE6;color:var(--tomato)}
+  .upq .qi.on .qic.up{background:var(--tomato);color:#fff;box-shadow:0 3px 8px rgba(239,91,58,.35)}
+  .upq .qic.err{background:#D93A2B;color:#fff}
+  .upq .qic.wait{background:#F3EEE9}
+  .upq .qi.done{color:inherit}
+  .upq .st-ok{color:var(--greenTx)}
+  .upq .st-up{color:#C2461F;font-weight:700}
+  .upq .qempty{padding:18px 14px;color:var(--muted);font-size:13px;text-align:center}
+
+  /* ===== sidebar bisa diciutkan (Ctrl+B) ===== */
+  .app{transition:grid-template-columns .25s ease}
+  .brand{position:relative}
+  .brand .bt{flex:1;min-width:0}
+  .sidetog{width:32px;height:32px;border-radius:9px;border:1px solid transparent;background:transparent;color:#A8978B;display:grid;place-items:center;cursor:pointer;flex-shrink:0;transition:.15s}
+  .sidetog:hover{background:#fff;border-color:var(--line);color:var(--tomato)}
+  .sidetog svg.i{width:18px;height:18px}
+  @media (min-width:861px){
+    body.side-mini .app{grid-template-columns:72px minmax(0,1fr)}
+    body.side-mini aside{padding:16px 10px;align-items:center;overflow-x:hidden}
+    body.side-mini .brand{flex-direction:column;margin:0 0 10px;gap:8px}
+    body.side-mini .brand .bt{display:none}
+    body.side-mini .sess{background:transparent;border:none;padding:0;margin:0 0 8px}
+    body.side-mini .sess>*:not(.sbtn){display:none}
+    body.side-mini .sess .sbtn{width:44px;height:44px;padding:0;border-radius:13px}
+    body.side-mini #upLabel{display:none}
+    body.side-mini .grp{font-size:0;height:1px;background:#EBD9CB;width:28px;margin:10px auto}
+    body.side-mini .nav{position:relative;width:48px;height:44px;padding:0;justify-content:center}
+    body.side-mini .nav .t{display:none}
+    body.side-mini .nav .d{width:12px;height:12px;border-radius:4px}
+    body.side-mini .nav svg.i{width:19px;height:19px}
+    body.side-mini .nav .c{position:absolute;top:1px;right:0;margin:0;font-size:10px;min-width:18px;height:18px;padding:0 4px;line-height:18px;border-radius:9px;box-shadow:0 1px 4px rgba(120,70,30,.15)}
+    body.side-mini .nav .c.z{display:none}
+    body.side-mini .nav .c.ok{width:18px;height:18px;min-width:18px;font-size:10px}
+    body.side-mini .asfoot{align-items:center;padding:12px 0 0;width:100%}
+    body.side-mini #katalogInfo,body.side-mini .asfoot .al{display:none}
+    body.side-mini .asfoot a{font-size:17px}
+  }
+
+  /* lampu simpan ke sheet (di kotak scan) */
+  .lamp{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:#B3A69C;white-space:nowrap;padding:0 4px;opacity:.75;transition:opacity .4s}
+  .lamp.hide{opacity:0;pointer-events:none}
+  .lamp i{width:8px;height:8px;border-radius:50%;background:#F5B300;box-shadow:0 0 0 3px rgba(245,179,0,.18);animation:lampPulse 1.2s ease-in-out infinite}
+  .lamp.ok i{background:var(--green);box-shadow:0 0 0 3px rgba(45,179,122,.18);animation:none}
+  .lamp.err{color:#D98A77;cursor:pointer;opacity:.9}
+  .lamp.err i{background:#E0533D;box-shadow:0 0 0 3px rgba(224,83,61,.18)}
+  @keyframes lampPulse{50%{opacity:.3}}
+  /* catatan baris sheet di kartu: kecil & pudar */
+  .upc .rowinfo{font-size:11px;font-weight:600;color:#C4B8AE;letter-spacing:0}
+
+  /* layar kode akses */
+  .gate{position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#FFF4EC,#FFE3D6);display:grid;place-items:center;padding:20px}
+  .gate.hide{display:none}
+  .gbox{width:min(360px,100%);background:#fff;border-radius:22px;padding:28px 24px;text-align:center;box-shadow:0 20px 50px rgba(150,70,30,.18)}
+  .glogo{width:64px;height:64px;margin:0 auto 12px;border-radius:19px;background:linear-gradient(135deg,#FF8A5B,var(--tomato));display:grid;place-items:center;font-size:30px;box-shadow:0 10px 24px rgba(239,91,58,.3)}
+  .gbox h2{margin:0 0 6px;font-size:20px}
+  .gbox p{margin:0 0 16px;color:var(--muted);font-size:13.5px;line-height:1.45}
+  .gbox p.err{color:#C2461F;font-weight:700}
+  .gbox input{width:100%;height:48px;border:2px solid var(--line);border-radius:14px;text-align:center;font-family:inherit;font-weight:800;font-size:20px;letter-spacing:.12em;text-transform:uppercase;outline:none;margin-bottom:12px}
+  .gbox input:focus{border-color:var(--tomato);box-shadow:0 0 0 4px rgba(239,91,58,.12)}
+  .gbox .btn{width:100%;justify-content:center}
+
+  /* aplikasi terpasang di komputer: kepala aplikasi mengisi tempat bilah judul Chrome (tidak ada judul dobel) */
+  .wco-bar{display:none}
+  @media (display-mode: window-controls-overlay){
+    html{--tb:env(titlebar-area-height,33px)}
+    body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--tb);background:var(--side);border-bottom:1px solid var(--line);z-index:299}
+    .wco-bar{display:flex;position:fixed;z-index:300;left:env(titlebar-area-x,0);top:env(titlebar-area-y,0);width:env(titlebar-area-width,100%);height:var(--tb);
+      align-items:center;gap:8px;padding:0 12px;font-size:12.5px;font-weight:800;color:var(--ink);-webkit-app-region:drag;app-region:drag;user-select:none}
+    .wco-bar .wco-lg{width:20px;height:20px;border-radius:6px;background:var(--tomato);display:grid;place-items:center;font-size:11px}
+    .wco-bar .wco-sub{color:var(--muted);font-weight:600}
+    .app{margin-top:var(--tb);min-height:calc(100vh - var(--tb))}
+    aside{top:var(--tb);height:calc(100vh - var(--tb))}
+  }
+</style>
+</head>
+<body class="booting">
+<!-- ikon garis (dipakai ulang lewat <use>) -->
+<svg style="display:none"><defs>
+ <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M16 7v10"/></symbol>
+ <symbol id="i-hour" viewBox="0 0 24 24"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22"/><path d="M7 2v4.2a2 2 0 0 0 .6 1.4L12 12l4.4-4.4a2 2 0 0 0 .6-1.4V2"/></symbol>
+ <symbol id="i-eye" viewBox="0 0 24 24"><path d="M10.7 5.1A10.7 10.7 0 0 1 12 5c7 0 10 7 10 7a13.2 13.2 0 0 1-1.7 2.7"/><path d="M14.1 14.2a3 3 0 1 1-4.2-4.2"/><path d="M17.5 17.5A10.1 10.1 0 0 1 12 19c-7 0-10-7-10-7a13.2 13.2 0 0 1 4.5-5.5"/><path d="m2 2 20 20"/></symbol>
+ <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+ <symbol id="i-panel" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></symbol>
+ <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+ <symbol id="i-up" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
+ <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+ <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+</defs></svg>
+
+<div class="wco-bar"><span class="wco-lg">📦</span>Stok Opname Shopee<span class="wco-sub">PGNet</span></div>
+<div class="app">
+
+  <!-- ================= MENU SAMPING ================= -->
+  <aside id="tabs">
+    <div class="brand"><div class="lg">📦</div><div class="bt"><b>Stok Opname</b><small>PGNet · Shopee</small></div><button class="sidetog" onclick="toggleSide()" title="Ciutkan sidebar (Ctrl+B)"><svg class="i"><use href="#i-panel"/></svg></button></div>
+
+    <!-- KARTU SESI: tahap, tombol upload, file terakhir, progres -->
+    <div class="sess" id="sessCard">
+      <div class="sbar"><span id="st1"></span><span id="st2"></span><span id="st3"></span></div>
+      <div class="stt" id="sessTitle">Tahap 1 dari 3 · Upload file Shopee</div>
+      <div class="sds" id="sessDesc">Download <i>Informasi Penjualan</i> dari Shopee Seller, lalu upload di sini.</div>
+      <button class="sbtn" id="upBtn" title="Upload file Shopee" onclick="document.getElementById('file').click()"><svg class="i"><use href="#i-up"/></svg><span id="upLabel">Upload file Shopee</span></button>
+      <div class="sfile" id="fileStatus"></div>
+      <div id="sessProg" class="hide">
+        <div class="spr"><span id="sumTodo">0 perlu dikerjakan</span><span id="kResolved" style="color:var(--green)">0 selesai</span></div>
+        <div class="sbar2"><i id="progressFill"></i></div>
+      </div>
+    </div>
+
+    <div class="nav tab" data-t="upload"><svg class="i" style="color:var(--tomato)"><use href="#i-scan"/></svg><span class="t">Upload Iklan<small>scan kode barang</small></span><span class="c z" id="cUpload">0</span></div>
+    <div class="grp">Temuan</div>
+    <div class="nav tab active" data-t="opname"><span class="d" style="background:var(--dOpname)"></span><span class="t">Stok Opname</span><span class="c z" id="cOpname">0</span></div>
+    <div class="nav tab" data-t="harga"><span class="d" style="background:var(--dHarga)"></span><span class="t">Selisih Harga</span><span class="c z" id="cHarga">0</span></div>
+    <div class="nav tab" data-t="tidak"><span class="d" style="background:var(--dTidak)"></span><span class="t">Habis di Katalog<small>kosongkan di Shopee</small></span><span class="c z" id="cTidak">0</span></div>
+    <div class="nav tab" data-t="belum"><span class="d" style="background:var(--dBelum)"></span><span class="t">Belum Diiklankan</span><span class="c z" id="cBelum">0</span></div>
+    <div class="grp">Ditunda</div>
+    <div class="nav tab" data-t="pending"><svg class="i" style="color:var(--iScan)"><use href="#i-scan"/></svg><span class="t">Terjual<small>menunggu scan</small></span><span class="c z" id="cPending">0</span></div>
+    <div class="nav tab" data-t="bayar"><svg class="i" style="color:var(--iPay)"><use href="#i-wallet"/></svg><span class="t">Belum Bayar<small>tunggu dibayar</small></span><span class="c z" id="cBayar">0</span></div>
+    <div class="nav tab" data-t="skip"><svg class="i" style="color:var(--iEye)"><use href="#i-eye"/></svg><span class="t">Tidak diiklankan</span><span class="c z" id="cSkip">0</span></div>
+    <div class="asfoot">
+      <span id="katalogInfo">memuat katalog…</span>
+      <a onclick="openSettings()" title="Pengaturan"><span class="ai">⚙</span><span class="al"> Pengaturan</span></a>
+      <a onclick="doReset()" title="Reset sesi"><span class="ai">↺</span><span class="al"> Reset sesi</span></a>
+    </div>
+  </aside>
+
+  <!-- ================= ISI ================= -->
+  <main>
+    <input type="file" id="file" accept=".xlsx,.xls">
+
+    <!-- PENGATURAN -->
+    <div class="card hide" id="setCard">
+      <div class="flex"><h3 style="margin:0">⚙ Pengaturan</h3><button class="btn-ghost btn-sm right" onclick="closeSettings()">tutup</button></div>
+      <div class="note" style="margin-top:12px">Harga jual Shopee = <code>(harga katalog + biaya 1 + biaya 2) ÷ (1 − potongan %)</code>, dibulatkan ke atas. Tersimpan di sheet, berlaku di semua perangkat.</div>
+      <div class="set-grid">
+        <div><label>Biaya tetap 1 (Rp)</label><input type="number" id="sFee1" min="0" step="1"></div>
+        <div><label>Biaya tetap 2 (Rp)</label><input type="number" id="sFee2" min="0" step="1"></div>
+        <div><label>Potongan Shopee (%)</label><input type="number" id="sPct" min="0" max="99" step="0.01"></div>
+        <div><label>Bulatkan ke atas per (Rp)</label><input type="number" id="sRound" min="1" step="1"></div>
+      </div>
+      <div class="note ok" id="sPreview" style="margin-top:12px"></div>
+      <div class="set-grid" style="grid-template-columns:1fr">
+        <div><label>Kata kunci "sengaja tidak diiklankan" (pisahkan dengan koma)</label>
+          <input type="text" id="sKeywords" placeholder="FISIK, COPOT, GOMPAL, ODM"></div>
+        <div><label>Label "📦 baru masuk" untuk barang masuk berapa hari terakhir (dari tab Data Base kolom M–Q)</label>
+          <input type="number" id="sMasuk" min="1" max="30" step="1" style="max-width:120px"></div>
+      </div>
+      <div class="flex" style="margin-top:14px">
+        <span class="muted" style="font-size:12.5px">Angka fee dipakai untuk upload berikutnya. Kata kunci langsung berlaku.</span>
+        <button class="btn right" id="sSaveBtn" onclick="saveSettingsUI()">Simpan</button>
+      </div>
+      <div style="margin-top:16px;font-weight:700">Ditandai manual sebagai tidak diiklankan (<span id="sExclCount">0</span>)</div>
+      <div id="sExclList" style="margin-top:4px"></div>
+    </div>
+
+    <!-- DIAGNOSTIK -->
+    <div class="card hide" id="diagCard" style="border-color:#F2D38A">
+      <div class="flex"><h3 style="margin:0">🔍 Diagnostik pencocokan</h3>
+        <button class="btn-ghost btn-sm right" onclick="document.getElementById('diagCard').classList.add('hide')">tutup</button></div>
+      <div id="diagBody" style="margin-top:8px"></div>
+    </div>
+
+    <!-- UPLOAD IKLAN (scan kode) -->
+    <div id="upView">
+      <div class="vh"><h2>Upload Iklan</h2></div>
+      <div class="subt2">Scan kode barang dari QC → salin datanya → tempel di Shopee. Baris otomatis tercatat di tab <b>Upload Iklan (Auto)</b>.</div>
+      <div class="scanbar" id="scanBar">
+        <div class="sico"><svg class="i"><use href="#i-scan"/></svg></div>
+        <input id="scanIn" autocomplete="off" spellcheck="false" placeholder="Scan kode ID barang di sini…">
+        <span class="lamp hide" id="syncLamp"><i></i><span></span></span>
+        <div class="seg" id="mpSeg"><span data-mp="Shopee">Shopee</span><span data-mp="Shopee & Tokopedia">Shopee &amp; Tokopedia</span><span data-mp="Tokopedia">Tokopedia</span></div>
+      </div>
+      <div class="scanhint" id="scanHint">Kotak scan selalu siap. Setelah scan, tekan <kbd>Enter</kbd> saat kotak kosong untuk menandai <b>sudah diiklankan</b>.</div>
+      <div class="upres">
+        <div id="upCard"></div>
+        <div class="upq" id="upList"></div>
+      </div>
+    </div>
+
+    <!-- MEMUAT (tampil saat aplikasi pertama dibuka) -->
+    <div id="bootLoad">
+      <div class="boot">
+        <div class="boot-logo"><span>📦</span></div>
+        <h3>Menyiapkan ruang kerja…</h3>
+        <div class="boot-bar"><i></i></div>
+        <ul class="boot-steps">
+          <li id="bKat"><span class="st"><span class="spin"></span></span><span class="tx">Memuat katalog</span></li>
+          <li id="bSes"><span class="st"><span class="spin"></span></span><span class="tx">Memuat sesi opname terakhir</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- BELUM ADA SESI -->
+    <div id="emptyState" class="hide">
+      <div class="vh"><h2>Stok Opname Shopee</h2></div>
+      <div class="empty" id="drop">
+        <div class="ic"><svg class="i"><use href="#i-up"/></svg></div>
+        <h3>Upload file Shopee untuk mulai opname</h3>
+        <p><b>Klik di sini</b> atau seret file ke halaman ini</p>
+        <p style="margin-top:8px;font-size:12.5px">Shopee Seller → Produk → Mass Update → Download → <i>Informasi Penjualan</i></p>
+      </div>
+    </div>
+
+    <!-- HASIL -->
+    <div id="result" class="hide">
+      <div class="vh"><h2 id="viewTitle">Stok Opname</h2><div id="viewSub" class="subt hide"></div></div>
+      <div id="viewHint" class="hint"></div>
+      <div class="note warn hide" id="newIssues"></div>
+      <div id="focusBox" class="hide"></div>
+      <div class="tbl-wrap" id="tblWrap">
+        <table>
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="gate hide" id="gate"><div class="gbox">
+  <div class="glogo">📦</div>
+  <h2>Stok Opname Shopee</h2>
+  <p id="gateMsg">Masukkan kode akses dari Hani. Cukup sekali di perangkat ini.</p>
+  <input id="gateIn" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX" maxlength="12">
+  <button class="btn" id="gateBtn" onclick="simpanKode()">Masuk</button>
+</div></div>
+<div class="ck-shade hide" id="dlgShade"><div class="ck dlg" id="dlgBox"></div></div>
+<div class="ck-shade hide" id="ckShade"><div class="ck" id="ckBox"></div></div>
+
+<script>
+// =====================================================================
+//  JALUR DATA KE APPS SCRIPT (JSONP) — dipakai di GitHub Pages & link /exec
+//  Cara pakai sama seperti google.script.run:
+//    srv().withSuccessHandler(fn).withFailureHandler(fn).namaFungsi(arg1, arg2)
+// =====================================================================
+var KODE_KEY='pgnet_so_kode';
+var KODE=(function(){ try{ return localStorage.getItem(KODE_KEY)||''; }catch(e){ return ''; } })();
+var API_FN=['getInitialData','saveSettings','saveRound1','appendItems','setPending','setMoved','setChecked','saveRound2',
+            'addExclusion','removeExclusion','resetSession','uploadScan','readUploadRow','deleteScan','setUploadDone'];
+var JSONP_MAX=5000;   // batas aman isi data per panggilan (URL GET)
+
+function jsonp(param, selesai, batasMs){
+  var nama='soCb'+Date.now()+Math.floor(Math.random()*1e5);
+  var tag=document.createElement('script'), sudah=false;
+  function bersih(){
+    sudah=true; clearTimeout(jam);
+    window[nama]=function(){};                                   // jawaban telat jangan bikin error
+    setTimeout(function(){ try{ delete window[nama]; }catch(e){} }, 120000);
+    if(tag.parentNode) tag.parentNode.removeChild(tag);
+  }
+  var jam=setTimeout(function(){ if(!sudah){ bersih(); selesai(new Error('Server tidak menjawab. Periksa internet, lalu coba lagi.')); } }, batasMs||60000);
+  window[nama]=function(isi){
+    if(sudah) return; bersih();
+    if(isi && isi.galat){ var er=new Error(isi.galat); er.kodeSalah=!!isi.kodeSalah; selesai(er); }
+    else selesai(null, isi);
+  };
+  tag.onerror=function(){ if(!sudah){ bersih(); selesai(new Error('Tidak bisa menghubungi server.')); } };
+  var base=(window.APP_CFG&&APP_CFG.APPS_SCRIPT)||'';
+  tag.src=base+'?'+param+'&k='+encodeURIComponent(KODE)+'&callback='+nama+'&_='+Date.now();
+  document.head.appendChild(tag);
+}
+function panggilApi(fn, args, ok, fail){
+  var a=JSON.stringify(args||[]);
+  var gagal=function(e){
+    if(e && e.kodeSalah){ mintaKode('Kode akses salah atau sudah diganti. Minta kode baru ke Hani.', true); }
+    if(fail) fail(e); else console.warn(fn, e);
+  };
+  var berhasil=function(isi){ if(ok) ok(isi?isi.r:undefined); };
+  if(encodeURIComponent(a).length<=JSONP_MAX){
+    jsonp('fn='+encodeURIComponent(fn)+'&a='+encodeURIComponent(a), function(e,isi){ e?gagal(e):berhasil(isi); });
+    return;
+  }
+  // data besar -> dipotong-potong, dikirim berurutan, digabung di server
+  var parts=[], i=0;
+  while(i<a.length){ var len=1500; while(len>50 && encodeURIComponent(a.substr(i,len)).length>JSONP_MAX) len=Math.floor(len*0.7); parts.push(a.substr(i,len)); i+=len; }
+  var pid=(Date.now().toString(36)+Math.random().toString(36).slice(2,10)).replace(/[^a-z0-9]/gi,'');
+  // potongan 1..n-1 dikirim bersamaan (maks 4), potongan terakhir dikirim paling akhir -> server lalu menggabungkan
+  var n=parts.length, next=0, done=0, stop=false;
+  var url=function(j){ return 'fn='+encodeURIComponent(fn)+'&pid='+pid+'&i='+j+'&n='+n+'&a='+encodeURIComponent(parts[j]); };
+  var terakhir=function(){ jsonp(url(n-1), function(e,isi){ e?gagal(e):berhasil(isi); }); };
+  var jalan=function(){
+    if(stop) return;
+    if(next>=n-1){ if(done>=n-1) terakhir(); return; }
+    var j=next++;
+    jsonp(url(j), function(e){
+      if(stop) return;
+      if(e){ stop=true; return gagal(e); }
+      done++; if(done>=n-1) terakhir(); else jalan();
+    });
+  };
+  if(n===1) terakhir(); else for(var t=0;t<Math.min(4,n-1);t++) jalan();
+}
+function srv(){
+  if(window.__TEST_RUN) return window.__TEST_RUN();
+  var ok=null, fail=null, r={
+    withSuccessHandler:function(f){ ok=f; return r; },
+    withFailureHandler:function(f){ fail=f; return r; }
+  };
+  API_FN.forEach(function(n){ r[n]=function(){ panggilApi(n, [].slice.call(arguments), ok, fail); }; });
+  return r;
+}
+</script>
+<script>
+// ================= STATE =================
+var DEFAULT_SETTINGS={fee1:5000, fee2:1250, pct:8.75, roundTo:1000, keywords:'FISIK, COPOT, GOMPAL, ODM', masukDays:7};
+var STATE = {
+  katalog: [],            // [{nama,qty,harga,key}]
+  katalogByKey: {},       // KEY -> {nama,qty,harga}
+  saved: [], meta: {},
+  settings: Object.assign({}, DEFAULT_SETTINGS),
+  exclusions: {},         // KEY -> {label, alasan}  (sengaja tidak diiklankan, permanen)
+  round: 1,               // 1 = deteksi, 2 = verifikasi
+  verified: false,        // upload #2 sudah dilakukan?
+  results: { opname:[], harga:[], tidak:[], belum:[] },
+  newIssues: [],          // temuan baru yang muncul saat upload #2
+  activeTab: 'opname',
+  focus: {opname:null, harga:null},   // barang yang sedang tampil di Mode Fokus
+  copied: {},                         // status tombol salin (nama/harga) utk barang aktif
+  lastFile: '', lastRows: 0, fileBusy: false,
+  ready: false, pendingFile: null, katalogAt: 0, _restored: false
+};
+var TIPES=['opname','harga','tidak','belum'];
+var CACHE_KEY='pgnet_stok_opname_katalog_v6';
+var REFRESH_MS=5*60*1000;   // auto-refresh katalog tiap 5 menit
+
+// ============== KATALOG: cache browser + auto refresh ==============
+(function initFromCache(){
+  try{
+    var c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+    if(c && c.katalog && c.katalog.length){
+      STATE.katalog=c.katalog; STATE.katalogAt=c.at||0; STATE.namaMap=c.namaMap||{}; STATE.masuk=c.masuk||[]; setKodeMap(c.kodeMap||[]);
+      if(c.settings) STATE.settings=Object.assign({}, DEFAULT_SETTINGS, c.settings);
+      if(c.exclusions) STATE.exclusions=c.exclusions;
+      buildKatalogIndex(); STATE.ready=true; updateKatalogInfo(true);
+      setTimeout(function(){ bootStep('bKat','Katalog siap <small>· '+Object.keys(STATE.katalogByKey).length+' SKU</small>'); },0);
+    }
+  }catch(e){}
+})();
+
+
+// ====== layar memuat awal ======
+function bootStep(id, text){
+  var li=document.getElementById(id); if(!li) return;
+  li.classList.add('ok'); li.querySelector('.st').innerHTML='✓'; li.querySelector('.tx').innerHTML=text;
+}
+function bootDone(){
+  document.body.classList.remove('booting');
+  var b=document.getElementById('bootLoad'); if(b) b.classList.add('hide');
+  if(document.getElementById('result').classList.contains('hide')) document.getElementById('emptyState').classList.remove('hide');
+}
+
+function refreshKatalog(isBackground){
+  if(!isBackground && !STATE.ready) updateKatalogInfo(false,'<span class="spin"></span> memuat katalog…');
+  srv().withSuccessHandler(function(d){
+    STATE.katalog=d.katalog||[]; STATE.namaMap=d.uploadIklan||{}; STATE.masuk=d.barangMasuk||[]; setKodeMap(d.kodeMap||[]); upMergeServer(d.uploadToday||[]);
+    if(d.settings) STATE.settings=Object.assign({}, DEFAULT_SETTINGS, d.settings);
+    if(d.exclusions) STATE.exclusions=d.exclusions;
+    STATE.katalogAt=Date.now();
+    buildKatalogIndex(); STATE.ready=true;
+    saveCache();
+    updateKatalogInfo(false);
+    CK.busy=false; if(CK.open) renderCek();
+    if(STATE._restored) renderAll();       // refresh latar: pengecualian dari perangkat lain ikut tampil
+    if(!STATE._restored){                  // sesi tersimpan cukup dimuat sekali
+      STATE._restored=true;
+      STATE.saved=d.saved||[]; STATE.meta=d.meta||{};
+      bootStep('bKat','Katalog siap <small>· '+Object.keys(STATE.katalogByKey).length+' SKU</small>');
+      bootStep('bSes', STATE.saved.length?'Sesi opname terakhir dimuat':'Belum ada sesi opname');
+      restoreSession();
+      setTimeout(bootDone, 350);
+    }
+    if(STATE.pendingFile){ var f=STATE.pendingFile; STATE.pendingFile=null; handleFile(f); }
+  }).withFailureHandler(function(e){
+    CK.busy=false; if(CK.open) renderCek();
+    if(!STATE._restored) bootDone();
+    if(!STATE.ready) updateKatalogInfo(false,'⚠ gagal memuat katalog: '+escapeHtml(e.message));
+    else updateKatalogInfo(false);
+  }).getInitialData();
+}
+function saveCache(){
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({kodeMap:STATE.kodeList, masuk:STATE.masuk, namaMap:STATE.namaMap, katalog:STATE.katalog, settings:STATE.settings, exclusions:STATE.exclusions, at:STATE.katalogAt})); }catch(e){}
+}
+// ====== kode akses: minta sekali per perangkat ======
+function mintaKode(pesan, salah){
+  if(salah){
+    KODE=''; try{ localStorage.removeItem(KODE_KEY); localStorage.removeItem(CACHE_KEY); }catch(e){}   // kode lama dicabut -> salinan data dihapus
+  }
+  var g=document.getElementById('gate'), m=document.getElementById('gateMsg');
+  m.textContent=pesan||'Masukkan kode akses dari Hani. Cukup sekali di perangkat ini.';
+  m.className=salah?'err':'';
+  g.classList.remove('hide');
+  setTimeout(function(){ document.getElementById('gateIn').focus(); },50);
+}
+function simpanKode(){
+  var v=String(document.getElementById('gateIn').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(v.length<6){ mintaKode('Kodenya 8 huruf/angka, contoh ABCD-2345.', false); return; }
+  KODE=v; try{ localStorage.setItem(KODE_KEY, v); }catch(e){}
+  document.getElementById('gate').classList.add('hide');
+  refreshKatalog(false);
+}
+document.getElementById('gateIn').addEventListener('keydown',function(e){ if(e.key==='Enter') simpanKode(); });
+if(KODE || window.__TEST_RUN) refreshKatalog(false); else mintaKode();
+setInterval(function(){ if(KODE || window.__TEST_RUN) refreshKatalog(true); }, REFRESH_MS);
+
+// ====== aplikasi terpasang (PWA) — hanya di GitHub Pages, bukan di link /exec ======
+if('serviceWorker' in navigator && !/googleusercontent\.com|script\.google\.com/.test(location.hostname) && location.protocol==='https:'){
+  window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+setInterval(function(){ if(STATE.ready){ updateKatalogInfo(false); if(CK.open) renderCek(); } }, 60*1000);
+
+function updateKatalogInfo(fromCache, override){
+  var el=document.getElementById('katalogInfo');
+  if(override){ el.innerHTML=override; return; }
+  var n=Object.keys(STATE.katalogByKey).length;
+  el.innerHTML='<b style="color:var(--ink)">'+n+' SKU katalog</b>'+(fromCache?' <span>(cache)</span>':'')+
+    '<br>'+(STATE.katalogAt?'diperbarui '+timeAgo(STATE.katalogAt):'')+
+    ' · <a onclick="manualRefresh()" style="color:var(--tomato)">🔄 refresh</a>';
+}
+function manualRefresh(){ updateKatalogInfo(false,'<span class="spin"></span> menyegarkan katalog…'); CK.busy=true; if(CK.open) renderCek(); refreshKatalog(false); }
+function timeAgo(ts){
+  var s=Math.floor((Date.now()-ts)/1000);
+  if(s<60) return 'baru saja';
+  var m=Math.floor(s/60); if(m<60) return m+' menit lalu';
+  return Math.floor(m/60)+' jam lalu';
+}
+
+// Normalisasi kunci pencocokan (dipakai di KEDUA sisi: katalog & shopee)
+function normKey(s){
+  return String(s==null?'':s).replace(/ /g,' ').replace(/\s+/g,' ')
+    .replace(/[–—]/g,'-').trim().toUpperCase();
+}
+function buildKatalogIndex(){
+  var m={};
+  STATE.katalog.forEach(function(k){
+    var kk=normKey(k.key); if(!kk) return;
+    if(!m[kk]) m[kk]={nama:k.nama, qty:0, harga:k.harga, kat:k.kat||''};   // harga = baris pertama (seperti VLOOKUP)
+    m[kk].qty+=k.qty;                                        // qty dijumlah (seperti rumus Anda)
+  });
+  STATE.katalogByKey=m;
+  var n={};
+  STATE.katalog.forEach(function(k){
+    var nn=normKey(k.nama); if(!nn) return;
+    if(!n[nn]) n[nn]={key:normKey(k.key), nama:k.nama, qty:0, harga:k.harga};
+    n[nn].qty+=k.qty;
+  });
+  STATE.katalogByNama=n;
+}
+
+// ============== RUMUS HARGA ==============
+// (harga katalog + fee1 + fee2) / (1 - pct%)  -> bulatkan ke atas per roundTo
+function calcTarget(h, s){
+  s=s||STATE.settings; h=num(h);
+  if(!(h>0)) return 0;
+  var x=(h+num(s.fee1)+num(s.fee2))/(1-num(s.pct)/100)/num(s.roundTo);
+  x=Math.round(x*1e6)/1e6;           // cegah galat pecahan (mis. 500000.0000001 -> 501000)
+  return Math.ceil(x)*num(s.roundTo);
+}
+
+// ============== SESI TERSIMPAN ==============
+function restoreSession(){
+  if(STATE.saved.length>0){
+    STATE.round=2;
+    STATE.verified=!!STATE.meta.round2At;
+    rebuildFromSaved();
+    switchToResultUI(); setStepUI();
+    toast('Sesi opname sebelumnya dimuat.');
+  }
+}
+function isTrue(v){ return v===true || v==='TRUE' || v===1 || v==='true'; }
+function numOrNull(v){ return (v===''||v==null)?null:num(v); }
+function rebuildFromSaved(){
+  STATE.results={opname:[],harga:[],tidak:[],belum:[]};
+  STATE.saved.forEach(function(r){
+    if(TIPES.indexOf(r.tipe)<0) return;
+    STATE.results[r.tipe].push({
+      skuFinal:String(r.skuFinal), tipe:r.tipe, label:r.label||String(r.skuFinal),
+      namaKatalog:r.namaKatalog, katalogQty:num(r.katalogQty), harga:num(r.harga),
+      shopeeQty1:num(r.shopeeQty1), selisih1:num(r.selisih1),
+      keterangan:r.keterangan, status:r.status, catatan:r.catatan||'',
+      hargaShopee1:num(r.hargaShopee1), hargaTarget:num(r.hargaTarget),
+      checked:isTrue(r.checked), resolved:isTrue(r.resolved),
+      shopeeQty2:numOrNull(r.shopeeQty2), hargaShopee2:numOrNull(r.hargaShopee2),
+      pending:num(r.pesananQty),
+      moved:String(r.dipindah||'')==='belum',
+      unpaid:String(r.dipindah||'')==='bayar'
+    });
+  });
+  renderAll();
+}
+
+// ============== UPLOAD FILE ==============
+var drop=document.getElementById('drop'), fileInput=document.getElementById('file');
+drop.onclick=function(){fileInput.click()};
+// seret file ke mana saja di halaman
+document.addEventListener('dragover',function(e){e.preventDefault();document.body.classList.add('drag');drop.classList.add('drag');});
+document.addEventListener('dragleave',function(e){ if(!e.relatedTarget){document.body.classList.remove('drag');drop.classList.remove('drag');} });
+document.addEventListener('drop',function(e){e.preventDefault();document.body.classList.remove('drag');drop.classList.remove('drag');
+  if(e.dataTransfer && e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);});
+fileInput.onchange=function(){ if(fileInput.files.length) handleFile(fileInput.files[0]); fileInput.value=''; };
+
+function handleFile(f){
+  var fs=document.getElementById('fileStatus');
+  STATE.fileBusy=true;
+  if(!STATE.ready || !STATE._restored){    // jangan proses sebelum katalog & sesi siap
+    STATE.pendingFile=f;
+    fs.innerHTML='<span class="spin"></span> Menunggu katalog selesai dimuat… file akan diproses otomatis.';
+    return;
+  }
+  fs.innerHTML='<span class="spin"></span> Membaca <b>'+escapeHtml(f.name)+'</b> …';
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+      var shopee=parseShopee(rows);
+      if(shopee.length===0){ STATE.fileBusy=false; fs.innerHTML='⚠ Tidak menemukan baris produk. Pastikan ini file <i>Informasi Penjualan</i> dari Shopee.'; return; }
+      STATE.lastFile=f.name; STATE.lastRows=shopee.length; STATE.fileBusy=false;
+      STATE.focus={opname:null, harga:null}; STATE.copied={};
+      if(STATE.round===1) runRound1(shopee); else runRound2(shopee);
+    }catch(err){ STATE.fileBusy=false; fs.innerHTML='⚠ Gagal membaca file: '+escapeHtml(err.message); }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+// Ambil baris produk asli dari file Shopee (buang baris header/instruksi)
+function parseShopee(rows){
+  var out=[];
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    var kode=String(r[0]||'').trim(), nama=String(r[1]||'').trim();
+    if(!nama || !/^\d{4,}$/.test(kode)) continue;   // kode produk asli = angka panjang
+    out.push({
+      nama:nama, variasi:String(r[3]||'').trim(),
+      skuInduk:String(r[4]||'').trim(), sku:String(r[5]||'').trim(),
+      harga:num(r[6]), stok:num(r[8])
+    });
+  }
+  return out;
+}
+
+// ====== SKU FINAL (port rumus REGEXMATCH kolom G) ======
+function computeSkuFinal(skuInduk, sku){
+  var e=(skuInduk||'').trim(), f=(sku||'').trim();
+  var isProc=/(^|[^A-Z])(I3|I5|I7|I9|RYZEN|PENTIUM|CELERON|CORE|PROCESSOR|PROSESOR|G7400)([^A-Z]|$)/.test((e+' '+f).toUpperCase());
+  return isProc ? (e!==''?e:f) : (f!==''?f:e);
+}
+// ====== SENGAJA TIDAK DIIKLANKAN ======
+// kata kunci dari pengaturan (mis. "FISIK, COPOT, GOMPAL, ODM") -> kata pertama yang cocok
+function matchKeyword(text){
+  var t=String(text||'').toUpperCase();
+  var kws=String(STATE.settings.keywords||'').split(',').map(function(k){return k.trim().toUpperCase();}).filter(Boolean);
+  for(var i=0;i<kws.length;i++) if(t.indexOf(kws[i])>=0) return kws[i];
+  return '';
+}
+// null = barang aktif (masuk daftar tugas); selain itu = sengaja tidak diiklankan
+function exclusionOf(it){
+  if(it.tipe!=='opname' && it.tipe!=='belum') return null;
+  var m=STATE.exclusions[normKey(it.skuFinal)];
+  if(m) return {type:'manual', alasan:m.alasan||''};
+  var kw=matchKeyword((it.label||'')+' '+(it.namaKatalog||''));
+  if(kw) return {type:'keyword', kw:kw};
+  return null;
+}
+// ====== ADA PESANAN, BELUM DISCAN KELUAR (sementara, per sesi) ======
+function isPending(it){ return it.tipe==='opname' && it.pending>0; }
+// beres otomatis: qty katalog SEKARANG (live, refresh tiap 5 menit) sudah sama dengan qty Shopee
+function katalogNow(it){ var k=STATE.katalogByKey[normKey(it.skuFinal)]; return k?k.qty:0; }
+function shopeeNow(it){ return it.shopeeQty2!=null ? it.shopeeQty2 : it.shopeeQty1; }
+function pendingDone(it){ return katalogNow(it)===shopeeNow(it); }
+
+// dipindah dari Stok Opname -> Belum Diiklankan (stok ada di katalog tapi iklannya belum dibuat)
+function isMoved(it){ return it.tipe==='opname' && !!it.moved; }
+// pesanan BELUM BAYAR: stok ditahan Shopee, beres sendiri (dibayar+di-scan keluar, atau batal lalu stok kembali)
+function isUnpaid(it){ return it.tipe==='opname' && !!it.unpaid; }
+function unpaidList(t){ return STATE.results[t].filter(function(it){return isUnpaid(it) && !exclusionOf(it);}); }
+function activeList(t){
+  var base=STATE.results[t].filter(function(it){return !exclusionOf(it) && !isPending(it) && !isMoved(it) && !isUnpaid(it);});
+  if(t==='belum') base=base.concat(STATE.results.opname.filter(function(it){return isMoved(it) && !exclusionOf(it);}));
+  return base;
+}
+function excludedList(t){ return STATE.results[t].filter(function(it){return !!exclusionOf(it);}); }
+function pendingList(t){ return STATE.results[t].filter(function(it){return isPending(it) && !exclusionOf(it) && !isMoved(it) && !isUnpaid(it);}); }
+
+function buildShopeeMaps(shopee){
+  var full=new Set(), qtyByKey={}, nameByKey={}, readyPrices={}, priceByKey={};
+  shopee.forEach(function(s){
+    var sf=computeSkuFinal(s.skuInduk, s.sku); if(!sf) return;
+    var key=normKey(sf);
+    full.add(key);
+    qtyByKey[key]=(qtyByKey[key]||0)+s.stok;
+    if(!nameByKey[key]) nameByKey[key]=sf.trim();
+    if(priceByKey[key]==null && s.harga>0) priceByKey[key]=s.harga;
+    if(s.stok!==0 && s.harga>0){                         // harga hanya dicek utk barang ready stok
+      if(!readyPrices[key]) readyPrices[key]=[];
+      if(readyPrices[key].indexOf(s.harga)<0) readyPrices[key].push(s.harga);
+    }
+  });
+  STATE.shopeeQty=qtyByKey; STATE.shopeeAt=Date.now();
+  try{ localStorage.setItem('pgnet_shopee_qty', JSON.stringify({at:STATE.shopeeAt, q:qtyByKey})); }catch(e){}
+  if(typeof renderUploadSoft==='function') setTimeout(renderUploadSoft,0);
+  return {full:full, qtyByKey:qtyByKey, nameByKey:nameByKey, readyPrices:readyPrices, priceByKey:priceByKey};
+}
+
+// ====== ANALISA (dipakai upload #1, dan upload #2 untuk cari temuan baru) ======
+function analyze(S){
+  var res={opname:[], harga:[], tidak:[], belum:[]};
+
+  // A. Qty: tiap SKU katalog vs Shopee
+  Object.keys(STATE.katalogByKey).forEach(function(key){
+    var k=STATE.katalogByKey[key], q=k.qty, t=S.qtyByKey[key]||0;
+    if(!S.full.has(key)){
+      if(q>0) res.belum.push({
+        skuFinal:key, tipe:'belum', label:k.nama, namaKatalog:k.nama,
+        katalogQty:q, harga:k.harga, shopeeQty1:0, selisih1:q,
+        keterangan:'Belum ada di Shopee', status:'Belum Diiklankan'
+      });
+      return;
+    }
+    var s=q-t;
+    if(s!==0) res.opname.push({
+      skuFinal:key, tipe:'opname', label:S.nameByKey[key]||k.nama, namaKatalog:k.nama,
+      katalogQty:q, harga:k.harga, shopeeQty1:t, selisih1:Math.abs(s),
+      keterangan:s>0?'Kurang di Shopee':'Lebih di Shopee', status:'Stok Opname'
+    });
+  });
+
+  // B. Ada di Shopee (stok≠0) tapi tidak ada di katalog
+  Object.keys(S.qtyByKey).forEach(function(key){
+    var t=S.qtyByKey[key];
+    if(t===0 || STATE.katalogByKey[key]) return;
+    res.tidak.push({
+      skuFinal:key, tipe:'tidak', label:S.nameByKey[key]||key, namaKatalog:'',
+      katalogQty:0, harga:S.priceByKey[key]||0, shopeeQty1:t, selisih1:t,
+      keterangan:'Tidak Ada di Katalog', status:'Cek Manual'
+    });
+  });
+
+  // C. Harga: barang ready stok yang ada di katalog -> harus = Katalog + Fee
+  Object.keys(S.readyPrices).forEach(function(key){
+    var k=STATE.katalogByKey[key];
+    if(!k) return;                                   // tidak ada di katalog -> sudah di tab B
+    var prices=S.readyPrices[key];
+    var base={skuFinal:key, tipe:'harga', label:S.nameByKey[key]||k.nama, namaKatalog:k.nama,
+              katalogQty:k.qty, harga:k.harga, shopeeQty1:S.qtyByKey[key]||0};
+    if(!(k.harga>0)){
+      res.harga.push(Object.assign(base,{hargaShopee1:prices[0], hargaTarget:0, selisih1:0,
+        keterangan:'Harga katalog kosong', status:'Harga katalog kosong',
+        catatan:''}));
+      return;
+    }
+    var target=calcTarget(k.harga);
+    var wrong=prices.filter(function(p){return p!==target;});
+    if(!wrong.length) return;                        // harga sama -> aman
+    var hs=wrong[0], diff=hs-target;
+    res.harga.push(Object.assign(base,{hargaShopee1:hs, hargaTarget:target, selisih1:Math.abs(diff),
+      keterangan:diff>0?'Shopee lebih mahal':'Shopee lebih murah', status:'Selisih Harga',
+      catatan: prices.length>1 ? ('Ada '+prices.length+' harga berbeda di Shopee: '+prices.map(rupiah).join(', ')) : ''}));
+  });
+
+  res.opname.sort(function(a,b){ return b.selisih1-a.selisih1; });
+  res.harga.sort(function(a,b){ return b.selisih1-a.selisih1; });
+  TIPES.forEach(function(t){ res[t].forEach(function(it){ it.checked=false; it.resolved=false; it.shopeeQty2=null; it.hargaShopee2=null; it.pending=0; it.moved=false; it.unpaid=false; it.catatan=it.catatan||''; }); });
+  return res;
+}
+
+// ====== UPLOAD #1 : DETEKSI ======
+function runRound1(shopee){
+  var S=buildShopeeMaps(shopee);
+  STATE.results=analyze(S);
+  STATE.verified=false; STATE.newIssues=[];
+  showDiag(S);
+  var flat=[].concat(STATE.results.opname,STATE.results.harga,STATE.results.tidak,STATE.results.belum);
+  toast('<span class="spin"></span> Menyimpan hasil deteksi…',true);
+  srv().withSuccessHandler(function(r){
+    STATE.round=2; setStepUI(); renderAll();
+    toast('✅ Upload #1 selesai — '+r.count+' temuan tersimpan.');
+  }).withFailureHandler(function(e){
+    toast('⚠ gagal menyimpan: '+escapeHtml(e.message));
+  }).saveRound1(flat);
+  switchToResultUI(); renderAll();
+}
+
+// ====== UPLOAD #2 : VERIFIKASI ======
+function runRound2(shopee){
+  var S=buildShopeeMaps(shopee);
+  var updates=[];
+  var R=STATE.results;
+
+  R.opname.forEach(function(it){
+    var t=S.qtyByKey[it.skuFinal]||0;
+    it.shopeeQty2=t; it.resolved=(katalogNow(it)===t);   // katalog terkini (sudah termasuk scan keluar terbaru)
+    updates.push({skuFinal:it.skuFinal, tipe:'opname', shopeeQty2:t, resolved:it.resolved});
+  });
+  R.tidak.forEach(function(it){
+    var key=normKey(it.skuFinal), t=S.qtyByKey[key]||0;
+    it.shopeeQty2=t; it.resolved=(t===0 || !!STATE.katalogByKey[key]);   // hilang dari Shopee / sudah masuk katalog
+    updates.push({skuFinal:it.skuFinal, tipe:'tidak', shopeeQty2:t, resolved:it.resolved});
+  });
+  R.belum.forEach(function(it){
+    var key=normKey(it.skuFinal);
+    it.shopeeQty2=S.qtyByKey[key]||0; it.resolved=S.full.has(key);        // sudah muncul di Shopee
+    updates.push({skuFinal:it.skuFinal, tipe:'belum', shopeeQty2:it.shopeeQty2, resolved:it.resolved});
+  });
+  R.harga.forEach(function(it){
+    var key=normKey(it.skuFinal), prices=S.readyPrices[key]||[];
+    it.shopeeQty2=S.qtyByKey[key]||0;
+    if(!prices.length){                 // stok sudah 0 / tidak aktif -> tidak perlu dicek harga
+      it.hargaShopee2=null; it.resolved=true; it.note2='stok 0';
+    }else{
+      var k=STATE.katalogByKey[key], target=calcTarget(k?k.harga:it.harga);
+      it.hargaTarget=target||it.hargaTarget;
+      var wrong=prices.filter(function(p){return p!==target;});
+      it.resolved=target>0 && wrong.length===0;
+      it.hargaShopee2=it.resolved?target:wrong[0]; it.note2='';
+    }
+    updates.push({skuFinal:it.skuFinal, tipe:'harga', shopeeQty2:it.shopeeQty2, hargaShopee2:it.hargaShopee2, resolved:it.resolved});
+  });
+
+  // yang sudah dicentang tapi di file terbaru MASIH salah -> centangnya dilepas, kembali jadi tugas
+  var byKey={}; updates.forEach(function(u){ byKey[u.tipe+'||'+u.skuFinal]=u; });
+  var unchecked=0;
+  TIPES.forEach(function(t){ R[t].forEach(function(it){
+    if(it.checked && !it.resolved && !(it.tipe==='opname' && (it.pending>0 || it.unpaid))){
+      it.checked=false; unchecked++;
+      var u=byKey[it.tipe+'||'+it.skuFinal]; if(u) u.checked=false;
+    }
+  }); });
+  STATE.uncheckedCount=unchecked;
+
+  // temuan BARU yang tidak ada di upload #1 (mis. salah ketik harga/stok saat membetulkan)
+  var fresh=analyze(S), known={};
+  TIPES.forEach(function(t){ R[t].forEach(function(it){ known[t+'||'+normKey(it.skuFinal)]=1; }); });
+  STATE.newIssues=[];
+  fresh.opname.concat(fresh.harga).forEach(function(it){
+    if(it.status!=='Stok Opname' && it.status!=='Selisih Harga') return;
+    if(exclusionOf(it)) return;                       // sengaja tidak diiklankan -> bukan temuan
+    if(!known[it.tipe+'||'+it.skuFinal]) STATE.newIssues.push(it);
+  });
+
+  STATE.verified=true;
+  toast('<span class="spin"></span> Menyimpan verifikasi…',true);
+  srv().withSuccessHandler(function(r){
+    toast('✅ Verifikasi selesai — '+r.applied+' item dicek ulang.'+(STATE.uncheckedCount?(' '+STATE.uncheckedCount+' masih belum sesuai di Shopee, dikembalikan ke daftar.'):''));
+  }).withFailureHandler(function(e){
+    toast('⚠ gagal verifikasi: '+escapeHtml(e.message));
+  }).saveRound2(updates);
+  renderAll();
+}
+
+// ============== RENDER ==============
+function ic(name){ return '<svg class="i"><use href="#i-'+name+'"/></svg>'; }
+// urut nama A–Z (angka dibaca sebagai angka: i5-4460 sebelum i5-10400)
+function sortByName(list){
+  return list.slice().sort(function(a,b){ return String(a.label).localeCompare(String(b.label),'id',{numeric:true,sensitivity:'base'}); });
+}
+function hasSession(){ return TIPES.some(function(t){ return STATE.results[t].length>0; }) || STATE.round===2; }
+
+function switchToResultUI(){
+  document.getElementById('result').classList.remove('hide');
+  document.getElementById('emptyState').classList.add('hide');
+}
+
+var TITLES={opname:'Stok Opname', harga:'Selisih Harga', tidak:'Habis di Katalog', belum:'Belum Diiklankan',
+            pending:'Terjual (Menunggu Scan)', bayar:'Belum Bayar', skip:'Sengaja Tidak Diiklankan'};
+var SUBS={tidak:'→ Kosongkan di Shopee'};
+var HINTS={
+  opname:'Kerjakan satu per satu: salin nama, cari di Shopee, ubah stok jadi angka yang distabilo.',
+  harga:'Kerjakan satu per satu: salin nama, cari di Shopee, lalu salin &amp; tempel harga yang distabilo.',
+  tidak:'<div class="explain">Stok di katalog sudah habis, tapi di Shopee masih ada.'+
+        '<div class="r">✅ <span><b>Biasanya barang sudah laku</b> → ubah stok Shopee jadi <b>0</b>, lalu centang.</span></div>'+
+        '<div class="r">🔍 <span>Kalau barangnya <b>masih ada di rak</b> → cek SKU-nya (mungkin salah tulis), atau scan masuk ke katalog.</span></div></div>',
+  belum:'Ada di katalog (stok &gt; 0) tapi belum ada iklannya di Shopee. Perlu dibuatkan iklan.',
+  pending:'Sudah terjual di Shopee, tapi barang belum di-scan keluar dari katalog. Beres otomatis setelah di-scan keluar (katalog diperbarui tiap 5 menit).',
+  bayar:'<div class="explain">Pesanan di Shopee <b>belum dibayar</b> — stoknya sedang ditahan Shopee, jadi kelihatan kurang.'+
+        '<div class="r">🚫 <span><b>Jangan tambah stok Shopee manual.</b> Kalau pesanan batal, Shopee mengembalikan stoknya sendiri.</span></div>'+
+        '<div class="r">✅ <span>Beres otomatis: kalau <b>dibayar</b> lalu barang di-scan keluar, atau kalau <b>batal</b> (terlihat setelah upload ulang).</span></div></div>',
+  skip:'Barang yang memang sengaja tidak diiklankan. Tidak dihitung sebagai tugas. Tanda manual tersimpan permanen.'
+};
+
+// barang dianggap selesai: dicentang, atau sudah sesuai di file terbaru
+function isDoneF(it){ return !!it.checked || (STATE.verified && !!it.resolved); }
+
+// angka di menu samping = sisa; semua beres -> bulatan ✓ hijau; tidak ada temuan -> 0 pudar
+function badge(id, remaining, total, neutral){
+  var el=document.getElementById(id);
+  el.className='c';
+  if(!total){ el.textContent='0'; el.classList.add('z'); return; }
+  if(!neutral && remaining===0){ el.textContent='✓'; el.classList.add('ok'); el.title='Selesai'; return; }
+  el.textContent=neutral?total:remaining; el.title='';
+}
+
+function renderSession(){
+  var s=hasSession(), stage=!s?1:(!STATE.verified?2:3);
+  ['st1','st2','st3'].forEach(function(id,i){
+    var el=document.getElementById(id); el.className='';
+    if(i+1<stage) el.className='ok'; else if(i+1===stage) el.className='on';
+  });
+  var A={}; TIPES.forEach(function(t){ A[t]=activeList(t); });
+  var P=pendingList('opname').concat(unpaidList('opname'));
+  var act=[].concat(A.opname,A.harga,A.tidak,A.belum);
+  var total=act.length+P.length;
+  var done=act.filter(isDoneF).length + P.filter(pendingDone).length;
+  var todo=total-done;
+  var title=document.getElementById('sessTitle'), desc=document.getElementById('sessDesc');
+  if(stage===1){
+    title.textContent='Tahap 1 dari 3 · Upload file Shopee';
+    desc.innerHTML='Download <i>Informasi Penjualan</i> dari Shopee Seller, lalu upload di sini.';
+    setText('upLabel','Upload file Shopee');
+  }else if(stage===2){
+    title.textContent='Tahap 2 dari 3 · Bereskan di Shopee';
+    desc.textContent='Kerjakan tiap tab. Setelah selesai, upload ulang file untuk verifikasi.';
+    setText('upLabel','Upload ulang');
+  }else{
+    title.textContent=todo? 'Tahap 3 dari 3 · Verifikasi' : 'Selesai 🎉';
+    desc.textContent=todo? ('Masih ada '+todo+' yang belum sesuai. Bereskan, lalu upload ulang lagi.') : 'Semua temuan sudah sesuai. Mantap!';
+    if(!todo){ ['st1','st2','st3'].forEach(function(id){ document.getElementById(id).className='ok'; }); }
+    setText('upLabel','Upload ulang');
+  }
+  var fs=document.getElementById('fileStatus');
+  if(STATE.lastFile && !STATE.fileBusy) fs.innerHTML='📄 '+escapeHtml(STATE.lastFile)+(STATE.lastRows?' · '+STATE.lastRows+' baris':'');
+  document.getElementById('sessProg').classList.toggle('hide',!s);
+  setText('sumTodo', todo+' perlu dikerjakan'); setText('kResolved', done+' selesai');
+  document.getElementById('progressFill').style.width=(total?Math.round(done/total*100):0)+'%';
+}
+function setStepUI(){ renderSession(); }
+
+function renderAll(){
+  var A={}; TIPES.forEach(function(t){ A[t]=activeList(t); });
+  var P=pendingList('opname');
+  var S=excludedList('opname').concat(excludedList('belum'));
+  var rem=function(l){ return l.filter(function(x){return !isDoneF(x);}).length; };
+  badge('cOpname',rem(A.opname),A.opname.length);
+  badge('cHarga', rem(A.harga), A.harga.length);
+  badge('cTidak', rem(A.tidak), A.tidak.length);
+  badge('cBelum', rem(A.belum), A.belum.length);
+  badge('cPending', P.filter(function(x){return !pendingDone(x);}).length, P.length);
+  var U=unpaidList('opname');
+  badge('cBayar', U.filter(function(x){return !pendingDone(x);}).length, U.length);
+  badge('cSkip', 0, S.length, true);
+  upBadge();
+
+  var ni=document.getElementById('newIssues');
+  if(STATE.verified && STATE.newIssues.length){
+    ni.classList.remove('hide');
+    ni.innerHTML='⚠ <b>'+STATE.newIssues.length+' selisih baru</b> muncul di file terbaru (tidak ada di upload pertama). '+
+      'Biasanya karena ada yang terjual tapi belum di-scan keluar, atau salah input saat membetulkan.'+
+      sortByName(STATE.newIssues).map(function(it){
+        var i=STATE.newIssues.indexOf(it);
+        var desc=it.tipe==='harga'
+          ? (it.keterangan==='Shopee lebih mahal'?'Shopee lebih mahal ':'Shopee lebih murah ')+rupiah(it.selisih1)+' → seharusnya '+rupiah(it.hargaTarget)
+          : it.keterangan+' '+it.selisih1+' (katalog '+it.katalogQty+' · shopee '+it.shopeeQty1+')';
+        var btn=(it.tipe==='opname' && it.keterangan==='Kurang di Shopee')
+          ? '<span class="ibs right"><button class="ib scan" data-pendnew="'+i+'" title="Terjual di Shopee, barang belum di-scan keluar">'+ic('scan')+'Terjual</button>'+
+            '<button class="ib pay" data-paynew="'+i+'" title="Pesanan belum dibayar">'+ic('wallet')+'Belum bayar</button></span>' : '';
+        return '<div class="excl-row"><b>'+escapeHtml(it.label)+'</b><span>'+escapeHtml(desc)+'</span>'+btn+'</div>';
+      }).join('');
+  }else ni.classList.add('hide');
+  renderSession();
+  renderTable();
+}
+
+function copyBtn(text, kind, extraCls){
+  return '<button class="cp '+(extraCls||'')+'" data-copy="'+escapeHtml(text)+'" data-kind="'+(kind||'')+'" title="Salin">'+ic('copy')+'Salin</button>';
+}
+
+function renderTable(){
+  if(STATE.activeTab==='upload'){ renderUpload(); return; }
+  var tab=STATE.activeTab, verify=STATE.verified;
+  setText('viewTitle',TITLES[tab]);
+  var sub=document.getElementById('viewSub');
+  if(SUBS[tab]){ sub.textContent=SUBS[tab]; sub.classList.remove('hide'); } else sub.classList.add('hide');
+  document.getElementById('viewHint').innerHTML=HINTS[tab];
+
+  var focusMode=(tab==='opname'||tab==='harga');
+  document.getElementById('tblWrap').classList.toggle('hide',focusMode);
+  document.getElementById('focusBox').classList.toggle('hide',!focusMode);
+  if(focusMode){ renderFocus(tab); return; }
+
+  var thead=document.getElementById('thead'), tbody=document.getElementById('tbody');
+  var head=function(cols){ thead.innerHTML='<tr>'+cols.map(function(c){return '<th class="'+(c[1]||'')+'">'+c[0]+'</th>'}).join('')+'</tr>'; };
+  var emptyRow=function(n,msg){ tbody.innerHTML='<tr><td colspan="'+n+'" class="empty-row">'+(msg||'— tidak ada —')+'</td></tr>'; };
+  var nameCell=function(it,extra){ return '<td class="name"><div class="nmw"><span>'+escapeHtml(it.label)+'</span>'+copyBtn(it.label,'name')+
+      (it.tipe==='tidak'?cekBtn(it):'')+'</div>'+katSub(it)+(extra||'')+'</td>'; };
+
+  // ---------- Terjual (menunggu scan) ----------
+  if(tab==='pending'){
+    var P=sortByName(pendingList('opname'));
+    head([['Barang'],['Terjual','num'],['Katalog sekarang','num'],['Stok Shopee','num'],['Status'],['']]);
+    if(!P.length) return emptyRow(6,'Tidak ada barang terjual yang menunggu scan.');
+    tbody.innerHTML=P.map(function(it){
+      var done=pendingDone(it);
+      return '<tr class="'+(done?'resolved':'')+'">'+nameCell(it)+'<td class="num">'+it.pending+'</td>'+
+        '<td class="num">'+katalogNow(it)+'</td><td class="num">'+shopeeNow(it)+'</td>'+
+        '<td>'+(done?'<span class="chip ch-ok">✓ sudah di-scan keluar</span>':'<span class="chip ch-pend">belum di-scan</span>')+'</td>'+
+        '<td><button class="ib" data-unpend="'+escapeHtml(it.skuFinal)+'">'+ic('undo')+'Batalkan</button></td></tr>';
+    }).join('');
+    return;
+  }
+  // ---------- Belum bayar ----------
+  if(tab==='bayar'){
+    var U=sortByName(unpaidList('opname'));
+    head([['Barang'],['Katalog sekarang','num'],['Stok Shopee','num'],['Status'],['']]);
+    if(!U.length) return emptyRow(5,'Tidak ada pesanan yang belum dibayar.');
+    tbody.innerHTML=U.map(function(it){
+      var done=pendingDone(it);
+      return '<tr class="'+(done?'resolved':'')+'">'+nameCell(it)+
+        '<td class="num">'+katalogNow(it)+'</td><td class="num">'+shopeeNow(it)+'</td>'+
+        '<td>'+(done?'<span class="chip ch-ok">✓ sudah sesuai</span>':'<span class="chip ch-pay">menunggu pembayaran</span>')+'</td>'+
+        '<td><div class="ibs"><button class="ib scan" data-pend="'+escapeHtml(it.skuFinal)+'" data-qty="'+it.selisih1+'" data-label="'+escapeHtml(it.label)+'" title="Sudah dibayar → pindah ke Terjual (Menunggu Scan)">'+ic('scan')+'Sudah dibayar</button>'+
+        '<button class="ib" data-unpay="'+escapeHtml(it.skuFinal)+'" title="Kembalikan ke Stok Opname">'+ic('undo')+'</button></div></td></tr>';
+    }).join('');
+    return;
+  }
+  // ---------- Sengaja tidak diiklankan ----------
+  if(tab==='skip'){
+    var X=sortByName(excludedList('opname').concat(excludedList('belum')));
+    head([['Barang'],['Qty Katalog','num'],['Harga Katalog','num'],['Alasan'],['']]);
+    if(!X.length) return emptyRow(5,'Belum ada barang yang ditandai sengaja tidak diiklankan.');
+    tbody.innerHTML=X.map(function(it){
+      var ex=exclusionOf(it);
+      var why = ex.type==='manual'
+        ? '<span class="chip ch-skip">ditandai manual</span>'+(ex.alasan?'<div class="sub-note">'+escapeHtml(ex.alasan)+'</div>':'')
+        : '<span class="chip ch-skip">kata kunci: '+escapeHtml(ex.kw)+'</span>';
+      var btn = ex.type==='manual'
+        ? '<button class="ib" data-unexcl="'+escapeHtml(normKey(it.skuFinal))+'">'+ic('undo')+'Jadikan tugas lagi</button>'
+        : '<span class="sub-note">ubah kata kunci di ⚙ Pengaturan</span>';
+      return '<tr>'+nameCell(it)+'<td class="num">'+it.katalogQty+'</td><td class="num">'+rupiah(it.harga)+'</td><td>'+why+'</td><td>'+btn+'</td></tr>';
+    }).join('');
+    return;
+  }
+
+  var data=sortByName(activeList(tab));
+  var cols;
+  if(tab==='tidak') cols=[['Barang (SKU Shopee)'],['Stok di Shopee','num'],['Yang harus dilakukan']];
+  else cols=[['Barang (Katalog)'],['Qty Katalog','num'],['Harga Katalog','num'],['Status']];
+  if(verify) cols.push(['Hasil cek']);
+  if(tab==='belum') cols.push(['Aksi']);
+  cols.push(['✓','checkcell']);
+  head(cols);
+  if(!data.length) return emptyRow(cols.length,'— tidak ada —');
+
+  tbody.innerHTML=data.map(function(it){
+    var cls=[]; if(it.checked) cls.push('done'); if(verify && it.resolved) cls.push('resolved');
+    var c='';
+    if(tab==='tidak'){
+      c+=nameCell(it)+'<td class="num">'+it.shopeeQty1+'</td>'+
+         '<td><span class="chip ch-kos">Kosongkan di Shopee</span><div class="act">ubah stok <b>'+it.shopeeQty1+' → 0</b></div></td>';
+      if(verify) c+='<td>'+(it.resolved?'<span class="chip ch-ok">✓ beres</span>':'<span class="chip ch-pend">✗ masih '+dash(it.shopeeQty2)+'</span>')+'</td>';
+    }else{
+      c+=nameCell(it,isMoved(it)?'<div class="sub-note">dipindah dari Stok Opname · stok Shopee '+it.shopeeQty1+'</div>':'')+
+         '<td class="num">'+it.katalogQty+'</td><td class="num">'+rupiah(it.harga)+'</td><td><span class="chip ch-belum">Belum diiklankan</span>'+
+         (function(){ var c=masukChipBelum(it); return c?'<div style="margin-top:5px">'+c+'</div>':''; })()+'</td>';
+      if(verify) c+='<td>'+(it.resolved?'<span class="chip ch-ok">✓ sudah diiklankan</span>':'<span class="chip ch-pend">✗ belum</span>')+'</td>';
+      c+='<td><div class="ibs">'+
+           (isMoved(it)?'<button class="ib" data-unmove="'+escapeHtml(it.skuFinal)+'" title="Kembalikan ke Stok Opname">'+ic('undo')+'</button>':'')+
+           '<button class="ib eye" data-excl="'+escapeHtml(it.skuFinal)+'" data-label="'+escapeHtml(it.label)+'" title="Sengaja tidak diiklankan">'+ic('eye')+'</button>'+
+         '</div></td>';
+    }
+    c+='<td class="checkcell"><input type="checkbox" '+(it.checked?'checked':'')+' data-sku="'+escapeHtml(it.skuFinal)+'" data-tipe="'+it.tipe+'" title="Sudah dibereskan"></td>';
+    return '<tr class="'+cls.join(' ')+'">'+c+'</tr>';
+  }).join('');
+}
+
+// ====== MODE FOKUS: Stok Opname & Selisih Harga (satu barang sekali tampil) ======
+function focusList(tab){ return sortByName(activeList(tab)); }
+function focusIndex(tab, list){
+  var i=-1, sku=STATE.focus[tab];
+  if(sku) list.forEach(function(it,k){ if(it.skuFinal===sku) i=k; });
+  if(i<0) list.forEach(function(it,k){ if(i<0 && !isDoneF(it)) i=k; });
+  return i;   // -1 = semua sudah selesai
+}
+// setelah barang dipindah/ditandai, fokus lanjut ke barang berikutnya yang belum selesai
+function advanceFocus(tab, sku){
+  var list=focusList(tab), i=-1;
+  list.forEach(function(it,k){ if(it.skuFinal===sku) i=k; });
+  var next=null;
+  for(var k=1;k<=list.length;k++){ var c=list[(i+k+list.length)%list.length]; if(c && c.skuFinal!==sku && !isDoneF(c)){ next=c; break; } }
+  STATE.focus[tab]=next?next.skuFinal:null;
+}
+function curPrice(it){ return (STATE.verified && it.hargaShopee2!=null)?it.hargaShopee2:it.hargaShopee1; }
+
+function renderFocus(tab){
+  var box=document.getElementById('focusBox');
+  var list=focusList(tab), isH=(tab==='harga');
+  if(!list.length){
+    box.innerHTML='<div class="hf-main hf-done"><div class="big">🎉</div><h3>'+(isH?'Tidak ada selisih harga':'Tidak ada selisih stok')+'</h3>'+
+      '<p class="muted">'+(isH?'Semua harga di Shopee sudah sama dengan Katalog + Fee.':'Stok Shopee sudah sama dengan katalog.')+'</p></div>';
+    return;
+  }
+  var idx=focusIndex(tab,list), done=list.filter(isDoneF).length, main;
+  if(idx<0){
+    main='<div class="hf-main hf-done"><div class="big">🎉</div><h3>'+(isH?'Semua harga sudah diubah':'Semua stok sudah disesuaikan')+'</h3>'+
+      '<p class="muted">'+done+' barang selesai. Upload ulang file Shopee untuk verifikasi otomatis.</p>'+
+      '<div class="hf-btns" style="justify-content:center"><button class="btn" onclick="document.getElementById(\'file\').click()">'+ic('up')+'Upload ulang file Shopee</button></div></div>';
+  }else{
+    var it=list[idx]; STATE.focus[tab]=it.skuFinal;
+    if(STATE.copied.sku!==it.skuFinal) STATE.copied={sku:it.skuFinal};
+    var cN=STATE.copied.name, cP=STATE.copied.price;
+    var nameBtn='<button class="cp'+(cN?' copied':'')+'" data-copy="'+escapeHtml(it.label)+'" data-kind="name">'+ic(cN?'check':'copy')+(cN?'Tersalin':'Salin nama')+'</button>';
+    main='<div class="hf-main">'+
+      '<div class="hf-step">Barang '+(idx+1)+' dari '+list.length+' · '+done+' selesai<span class="bar"><i style="width:'+Math.round(done/list.length*100)+'%"></i></span></div>'+
+      '<div class="ln"><div class="num">1</div><div class="body"><div class="cap">Cari barang ini di Shopee</div>'+
+        '<div class="namebox"><div class="nbt"><b>'+escapeHtml(it.label)+'</b>'+katSub(it)+'</div>'+nameBtn+(isH?'':cekBtn(it,true))+'</div>'+
+        (it.catatan?'<div class="oldline">'+escapeHtml(it.catatan)+'</div>':'')+'</div></div>';
+
+    if(isH){
+      var kosong=it.status==='Harga katalog kosong', mahal=it.keterangan==='Shopee lebih mahal';
+      if(kosong){
+        main+='<div class="ln"><div class="num">2</div><div class="body"><div class="cap">Harga katalog belum ada</div>'+
+          '<div class="hf-flag ch-tidak" style="margin-top:0">Isi harga di katalog dulu, lalu klik 🔄 refresh. Harga Shopee sekarang '+rupiah(curPrice(it))+'.</div></div></div>';
+      }else{
+        var priceBtn='<button class="cp'+(cP?' copied':'')+'" data-copy="'+Math.round(it.hargaTarget)+'" data-kind="price">'+ic(cP?'check':'copy')+(cP?'Tersalin':'Salin harga')+'</button>';
+        main+='<div class="ln"><div class="num">2</div><div class="body"><div class="cap">Ubah harganya jadi</div>'+
+          '<div class="pricebox"><b>'+rupiah(it.hargaTarget)+'</b>'+priceBtn+'</div>'+
+          '<div class="oldline">Sekarang di Shopee <s>'+rupiah(curPrice(it))+'</s> · <b class="'+(mahal?'dn':'up')+'">'+(mahal?'↓ turunkan ':'↑ naikkan ')+rupiah(it.selisih1)+'</b> · katalog '+rupiah(it.harga)+' + fee</div></div></div>';
+      }
+    }else{
+      var target=katalogNow(it), now=shopeeNow(it), diff=target-now;
+      main+='<div class="ln"><div class="num">2</div><div class="body"><div class="cap">Ubah stoknya jadi</div>'+
+        '<div class="stockbox"><b>'+target+'</b><span class="u">pcs</span>'+
+          (diff? '<span class="dir '+(diff>0?'up':'dn')+'">'+(diff>0?'tambah ':'kurangi ')+Math.abs(diff)+'</span>' : '<span class="dir up">sudah sama</span>')+'</div>'+
+        '<div class="oldline">Sekarang di Shopee <b>'+now+'</b> · di katalog <b>'+target+'</b></div>'+
+        (function(){ var c=masukChipOpname(it); return c?'<div class="newline">'+c+'</div>':''; })()+'</div></div>';
+    }
+    if(STATE.verified){
+      var okTxt=isH?('✓ Sudah sesuai di file terbaru'):('✓ Sudah sesuai di file terbaru');
+      var badTxt=isH?('✗ Di file terbaru harganya masih '+(it.hargaShopee2==null?'-':rupiah(it.hargaShopee2))):('✗ Di file terbaru stok Shopee masih '+dash(it.shopeeQty2));
+      main+='<div class="hf-flag '+(it.resolved?'ch-ok':'ch-pend')+'">'+(it.resolved?okTxt:badTxt)+'</div>';
+    }
+    main+='<div class="hf-btns">'+
+        (it.checked ? '<button class="btn" data-fundo="1">'+ic('undo')+'Batalkan centang</button>'
+                    : '<button class="btn" data-fdone="1">✓ Sudah diubah, lanjut →</button>')+
+        '<button class="btn-ghost" data-fprev="1" title="Sebelumnya">←</button>'+
+        '<button class="btn-ghost" data-fskip="1">Lewati →</button>'+
+      '</div>'+
+      '<div class="hf-kbd">Pintasan: <kbd>N</kbd> salin nama'+(isH?' · <kbd>H</kbd> salin harga':'')+' · <kbd>Enter</kbd> sudah diubah · <kbd>←</kbd> <kbd>→</kbd> pindah barang</div>';
+    if(!isH){
+      main+='<div class="alt">Bukan salah stok?'+
+        (it.keterangan==='Kurang di Shopee'
+          ? '<button class="lk scan" data-pend="'+escapeHtml(it.skuFinal)+'" data-qty="'+it.selisih1+'" data-label="'+escapeHtml(it.label)+'" title="Terjual di Shopee, barang belum di-scan keluar">'+ic('scan')+'Terjual, menunggu scan</button>'+
+            '<button class="lk pay" data-unpaid="'+escapeHtml(it.skuFinal)+'" data-label="'+escapeHtml(it.label)+'" title="Pesanan di Shopee belum dibayar">'+ic('wallet')+'Belum bayar</button>'+
+            '<button class="lk hour" data-move="'+escapeHtml(it.skuFinal)+'" data-label="'+escapeHtml(it.label)+'" title="Pindahkan ke Belum Diiklankan">'+ic('hour')+'Iklan belum dibuat</button>'
+          : '')+
+        '<button class="lk eye" data-excl="'+escapeHtml(it.skuFinal)+'" data-label="'+escapeHtml(it.label)+'" title="Sengaja tidak diiklankan">'+ic('eye')+'Tidak diiklankan</button>'+
+      '</div>';
+    }
+    main+='</div>';
+  }
+  var side='<div class="hf-list">'+list.map(function(x,k){
+    var cls=['hf-li']; if(k===idx) cls.push('on'); if(isDoneF(x)) cls.push('ck');
+    var right;
+    if(isH) right=x.hargaTarget?rupiah(x.hargaTarget):'—';
+    else { var t=katalogNow(x), n=shopeeNow(x); right='<span class="dir '+(t>=n?'up':'dn')+'">'+n+'→'+t+'</span>'; }
+    var nw=(!isH && masukChipOpname(x))?' <span title="baru masuk">📦</span>':'';
+    return '<div class="'+cls.join(' ')+'" data-fgo="'+escapeHtml(x.skuFinal)+'"><span class="dot"></span><span>'+escapeHtml(x.label)+nw+'</span><span class="p">'+right+'</span></div>';
+  }).join('')+'</div>';
+  box.innerHTML='<div class="hf">'+main+side+'</div>';
+}
+function focusMove(step){
+  var tab=STATE.activeTab, list=focusList(tab); if(!list.length) return;
+  var i=focusIndex(tab,list); if(i<0) i=list.length-1;
+  i=(i+step+list.length)%list.length; STATE.focus[tab]=list[i].skuFinal; renderTable();
+}
+function focusSetChecked(val){
+  var tab=STATE.activeTab, list=focusList(tab), i=focusIndex(tab,list); if(i<0) return;
+  var it=list[i]; it.checked=val;
+  srv().withFailureHandler(function(){ toast('⚠ gagal simpan centang'); }).setChecked(it.skuFinal,it.tipe,val);
+  if(val) advanceFocus(tab,it.skuFinal);
+  renderAll();
+}
+function copyText(t, kind){
+  var ok=function(){
+    if(kind==='name'||kind==='price'){ STATE.copied[kind]=true; if(STATE.activeTab==='opname'||STATE.activeTab==='harga') renderTable(); }
+    toast('📋 <b>'+escapeHtml(t)+'</b> disalin. Tempel di Shopee (Ctrl+V).');
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok,function(){ fallbackCopy(t); ok(); }); }
+  else { fallbackCopy(t); ok(); }
+}
+function fallbackCopy(t){ var a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(a); }
+document.addEventListener('keydown',function(e){
+  var tab=STATE.activeTab; if(tab!=='opname' && tab!=='harga') return;
+  var tg=(e.target&&e.target.tagName)||''; if(tg==='INPUT'||tg==='TEXTAREA') return;
+  if(document.getElementById('result').classList.contains('hide')) return;
+  if(!document.getElementById('setCard').classList.contains('hide')) return;
+  var k=e.key;
+  if(k==='Enter'){ e.preventDefault(); var b=document.querySelector('#focusBox [data-fdone]'); if(b) focusSetChecked(true); }
+  else if(k==='ArrowRight'){ focusMove(1); }
+  else if(k==='ArrowLeft'){ focusMove(-1); }
+  else if(k==='n'||k==='N'){ var n=document.querySelector('#focusBox [data-kind="name"]'); if(n) copyText(n.getAttribute('data-copy'),'name'); }
+  else if(tab==='harga' && (k==='h'||k==='H'||k==='c'||k==='C')){ var p=document.querySelector('#focusBox [data-kind="price"]'); if(p) copyText(p.getAttribute('data-copy'),'price'); }
+});
+
+// ====== pindahkan ke / kembalikan dari "Belum Diiklankan" ======
+function setMovedUI(sku, on, label){
+  var it=STATE.results.opname.filter(function(x){return String(x.skuFinal)===String(sku)})[0];
+  if(!it) return;
+  if(on) advanceFocus('opname', it.skuFinal);
+  it.moved=on; renderAll();
+  toast(on ? escapeHtml(label||it.label)+' dipindah ke <b>Belum Diiklankan</b>.' : escapeHtml(it.label)+' kembali ke Stok Opname.');
+  srv().withFailureHandler(function(e){
+    it.moved=!on; renderAll(); toast('⚠ gagal menyimpan: '+escapeHtml(e.message));
+  }).setMoved(sku,'opname',on?'belum':'');
+}
+
+// ====== tandai / batalkan "belum bayar" ======
+function setUnpaidUI(sku, on, label){
+  var it=STATE.results.opname.filter(function(x){return String(x.skuFinal)===String(sku)})[0];
+  if(!it) return;
+  if(on) advanceFocus('opname', it.skuFinal);
+  it.unpaid=on; renderAll();
+  toast(on ? escapeHtml(label||it.label)+' dipindah ke <b>Belum Bayar</b>.' : escapeHtml(it.label)+' kembali ke Stok Opname.');
+  srv().withFailureHandler(function(e){
+    it.unpaid=!on; renderAll(); toast('⚠ gagal menyimpan: '+escapeHtml(e.message));
+  }).setMoved(sku,'opname',on?'bayar':'');
+}
+function markUnpaidNew(idx){
+  var it=STATE.newIssues[idx]; if(!it) return;
+  it.unpaid=true; it.shopeeQty2=it.shopeeQty1;
+  STATE.results.opname.push(it); STATE.newIssues.splice(idx,1); renderAll();
+  srv().withSuccessHandler(function(){ toast(escapeHtml(it.label)+' dipindah ke <b>Belum Bayar</b>.'); })
+    .withFailureHandler(function(e){ toast('⚠ gagal menyimpan: '+escapeHtml(e.message)); })
+    .appendItems([{skuFinal:it.skuFinal, tipe:'opname', label:it.label, namaKatalog:it.namaKatalog,
+                   katalogQty:it.katalogQty, harga:it.harga, shopeeQty1:it.shopeeQty1, selisih1:it.selisih1,
+                   keterangan:it.keterangan, status:it.status, dipindah:'bayar'}]);
+}
+
+// ====== tandai / batalkan "ada pesanan, belum discan keluar" ======
+// jumlah terjual = selisih (katalog - Shopee), sudah pasti -> langsung pindah, tanpa bertanya
+function markPending(sku, qtyDefault, label){
+  doMarkPending(sku, Math.max(1,Math.abs(Math.round(num(qtyDefault)))||1), label);
+}
+function doMarkPending(sku, qty, label){
+  var it=STATE.results.opname.filter(function(x){return String(x.skuFinal)===String(sku)})[0];
+  if(!it) return;
+  advanceFocus('opname', it.skuFinal);
+  if(it.unpaid){ it.unpaid=false; srv().setMoved(sku,'opname',''); }
+  it.pending=qty; renderAll();
+  srv().withSuccessHandler(function(){
+    toast(escapeHtml(label)+' ('+qty+' pcs) dipindah ke <b>Terjual</b>. <a class="tlink" data-unpend="'+escapeHtml(sku)+'">Batalkan</a>');
+  }).withFailureHandler(function(e){
+    it.pending=0; renderAll(); toast('⚠ gagal menyimpan: '+escapeHtml(e.message));
+  }).setPending(sku,'opname',qty);
+}
+function unmarkPending(sku){
+  var it=STATE.results.opname.filter(function(x){return String(x.skuFinal)===String(sku)})[0];
+  if(!it) return;
+  var old=it.pending; it.pending=0; renderAll();
+  srv().withFailureHandler(function(e){
+    it.pending=old; renderAll(); toast('⚠ gagal: '+escapeHtml(e.message));
+  }).setPending(sku,'opname',0);
+}
+// selisih BARU di upload #2 yang ternyata karena orderan -> masukkan ke sesi sebagai "menunggu scan keluar"
+function markPendingNew(idx){
+  var it=STATE.newIssues[idx]; if(!it) return;
+  doMarkPendingNew(it, Math.max(1,Math.abs(Math.round(num(it.selisih1)))||1));
+}
+function doMarkPendingNew(it, qty){
+  var idx=STATE.newIssues.indexOf(it); if(idx<0) return;
+  it.pending=qty;
+  it.shopeeQty2=it.shopeeQty1;               // qty Shopee dari file terbaru
+  STATE.results.opname.push(it);
+  STATE.newIssues.splice(idx,1);
+  renderAll();
+  srv().withSuccessHandler(function(){
+    toast(escapeHtml(it.label)+' ('+qty+' pcs) dipindah ke <b>Terjual</b>. <a class="tlink" data-unpend="'+escapeHtml(it.skuFinal)+'">Batalkan</a>');
+  }).withFailureHandler(function(e){ toast('⚠ gagal menyimpan: '+escapeHtml(e.message)); })
+    .appendItems([{skuFinal:it.skuFinal, tipe:'opname', label:it.label, namaKatalog:it.namaKatalog,
+                   katalogQty:it.katalogQty, harga:it.harga, shopeeQty1:it.shopeeQty1, selisih1:it.selisih1,
+                   keterangan:it.keterangan, status:it.status, pesananQty:it.pending}]);
+}
+
+// ====== tandai / batalkan "sengaja tidak diiklankan" ======
+function markExcluded(key, label){
+  askDialog({icon:'eye', red:true, title:'Sengaja tidak diiklankan', name:label,
+    text:'Barang ini disembunyikan dari daftar tugas dan dipindah ke tab <b>Tidak diiklankan</b>.',
+    input:'Alasan (opsional)', placeholder:'misal: pin kurang bagus', ok:'Tandai'},
+    function(alasan){ doMarkExcluded(key, label, alasan); });
+}
+function doMarkExcluded(key, label, alasan){
+  key=normKey(key);
+  if(STATE.activeTab==='opname') advanceFocus('opname', key);
+  STATE.exclusions[key]={label:label, alasan:alasan.trim()};   // langsung tampil (optimistis)
+  saveCache(); renderAll();
+  srv().withSuccessHandler(function(ex){
+    STATE.exclusions=ex||STATE.exclusions; saveCache(); renderAll(); renderExclSettings();
+    toast(escapeHtml(label)+' ditandai <b>sengaja tidak diiklankan</b>.');
+  }).withFailureHandler(function(e){
+    delete STATE.exclusions[key]; saveCache(); renderAll();
+    toast('⚠ gagal menyimpan: '+escapeHtml(e.message));
+  }).addExclusion(key, label, alasan.trim());
+}
+function unmarkExcluded(key){
+  key=normKey(key);
+  var old=STATE.exclusions[key];
+  delete STATE.exclusions[key]; saveCache(); renderAll(); renderExclSettings();
+  srv().withSuccessHandler(function(ex){
+    STATE.exclusions=ex||STATE.exclusions; saveCache(); renderAll(); renderExclSettings();
+    toast(escapeHtml(old?old.label:key)+' kembali jadi tugas.');
+  }).withFailureHandler(function(e){
+    if(old) STATE.exclusions[key]=old; saveCache(); renderAll(); renderExclSettings();
+    toast('⚠ gagal: '+escapeHtml(e.message));
+  }).removeExclusion(key);
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-excl]');
+  if(b){ markExcluded(b.getAttribute('data-excl'), b.getAttribute('data-label')); return; }
+  var u=e.target.closest('[data-unexcl]');
+  if(u){ unmarkExcluded(u.getAttribute('data-unexcl')); return; }
+  var p=e.target.closest('[data-pend]');
+  if(p){ markPending(p.getAttribute('data-pend'), p.getAttribute('data-qty'), p.getAttribute('data-label')); return; }
+  var up=e.target.closest('[data-unpend]');
+  if(up){ unmarkPending(up.getAttribute('data-unpend')); return; }
+  var h;
+  if((h=e.target.closest('[data-copy]'))){ copyText(h.getAttribute('data-copy'), h.getAttribute('data-kind')); return; }
+  if((h=e.target.closest('[data-fdone]'))){ focusSetChecked(true); return; }
+  if((h=e.target.closest('[data-fundo]'))){ focusSetChecked(false); return; }
+  if((h=e.target.closest('[data-fskip]'))){ focusMove(1); return; }
+  if((h=e.target.closest('[data-fprev]'))){ focusMove(-1); return; }
+  if((h=e.target.closest('[data-fgo]'))){ STATE.focus[STATE.activeTab]=h.getAttribute('data-fgo'); renderTable(); return; }
+  if((h=e.target.closest('[data-unpaid]'))){ setUnpaidUI(h.getAttribute('data-unpaid'), true, h.getAttribute('data-label')); return; }
+  if((h=e.target.closest('[data-unpay]'))){ setUnpaidUI(h.getAttribute('data-unpay'), false); return; }
+  if((h=e.target.closest('[data-paynew]'))){ markUnpaidNew(parseInt(h.getAttribute('data-paynew'),10)); return; }
+  var mv=e.target.closest('[data-move]');
+  if(mv){ setMovedUI(mv.getAttribute('data-move'), true, mv.getAttribute('data-label')); return; }
+  var um=e.target.closest('[data-unmove]');
+  if(um){ setMovedUI(um.getAttribute('data-unmove'), false); return; }
+  var pn=e.target.closest('[data-pendnew]');
+  if(pn){ markPendingNew(parseInt(pn.getAttribute('data-pendnew'),10)); }
+});
+
+// daftar tanda manual di panel ⚙ (bisa dibatalkan walau barangnya tidak ada di sesi sekarang)
+function renderExclSettings(){
+  var keys=Object.keys(STATE.exclusions);
+  setText('sExclCount',keys.length);
+  document.getElementById('sExclList').innerHTML = keys.length
+    ? keys.map(function(k){ var x=STATE.exclusions[k];
+        return '<div class="excl-row"><span>'+escapeHtml(x.label||k)+'</span>'+(x.alasan?'<span class="muted">'+escapeHtml(x.alasan)+'</span>':'')+
+               '<button class="ib right" data-unexcl="'+escapeHtml(k)+'">'+ic('undo')+'Batalkan</button></div>'; }).join('')
+    : '<div class="muted" style="font-size:12.5px">Belum ada.</div>';
+}
+
+// ============== DIAGNOSTIK ==============
+function showDiag(S){
+  var katKeys=Object.keys(STATE.katalogByKey), shpKeys=Object.keys(S.qtyByKey), overlap=0;
+  shpKeys.forEach(function(k){ if(STATE.katalogByKey[k]) overlap++; });
+  var card=document.getElementById('diagCard');
+  var suspicious=katKeys.length>0 && overlap < Math.min(5, Math.floor(shpKeys.length*0.05));
+  if(!suspicious){ card.classList.add('hide'); return; }
+  var sample=function(a){return a.slice(0,10).map(function(k){return '<code>'+escapeHtml(k)+'</code>'}).join('<br>')};
+  document.getElementById('diagBody').innerHTML=
+    '<b>'+katKeys.length+'</b> SKU katalog · <b>'+shpKeys.length+'</b> SKU Shopee · <b style="color:var(--danger)">'+overlap+'</b> cocok'+
+    '<div class="note warn">⚠ Hampir tidak ada yang cocok. Bandingkan contoh teks di bawah, lalu kirim screenshot ini ke Claude.</div>'+
+    '<div class="row" style="margin-top:8px"><div class="col"><div class="muted">Contoh KATALOG (kolom H):</div>'+sample(katKeys)+'</div>'+
+    '<div class="col"><div class="muted">Contoh SHOPEE (SKU Final):</div>'+sample(shpKeys)+'</div></div>';
+  card.classList.remove('hide');
+}
+
+// ============== PENGATURAN FEE ==============
+function openSettings(){
+  var s=STATE.settings;
+  document.getElementById('sFee1').value=s.fee1; document.getElementById('sFee2').value=s.fee2;
+  document.getElementById('sPct').value=s.pct;   document.getElementById('sRound').value=s.roundTo;
+  document.getElementById('sKeywords').value=s.keywords||'';
+  document.getElementById('sMasuk').value=s.masukDays||7;
+  previewSettings(); renderExclSettings();
+  document.getElementById('setCard').classList.remove('hide');
+}
+function closeSettings(){ document.getElementById('setCard').classList.add('hide'); }
+function readSettingsForm(){
+  return { fee1:num(document.getElementById('sFee1').value), fee2:num(document.getElementById('sFee2').value),
+           pct:num(document.getElementById('sPct').value),   roundTo:num(document.getElementById('sRound').value),
+           keywords:document.getElementById('sKeywords').value,
+           masukDays:Math.min(30,Math.max(1,Math.round(num(document.getElementById('sMasuk').value)||7))) };
+}
+function previewSettings(){
+  var s=readSettingsForm(), el=document.getElementById('sPreview');
+  if(!(s.roundTo>0) || s.pct>=100){ el.innerHTML='⚠ Isi angka yang valid (potongan di bawah 100%, pembulatan > 0).'; return; }
+  el.innerHTML='Contoh: harga katalog '+[290000,475000,775000].map(function(h){
+    return '<b>'+rupiah(h)+'</b> → <b>'+rupiah(calcTarget(h,s))+'</b>';
+  }).join(' · ');
+}
+['sFee1','sFee2','sPct','sRound'].forEach(function(id){ document.getElementById(id).oninput=previewSettings; });
+function saveSettingsUI(){
+  var s=readSettingsForm(), btn=document.getElementById('sSaveBtn');
+  btn.disabled=true;
+  srv().withSuccessHandler(function(clean){
+    btn.disabled=false; STATE.settings=Object.assign({}, DEFAULT_SETTINGS, clean); saveCache(); closeSettings();
+    renderAll();                                   // kata kunci langsung berlaku
+    toast('✅ Pengaturan disimpan.');
+  }).withFailureHandler(function(e){
+    btn.disabled=false; toast('⚠ '+escapeHtml(e.message));
+  }).saveSettings(s);
+}
+
+// ============== INTERAKSI ==============
+document.getElementById('tabs').onclick=function(e){
+  var t=e.target.closest('.tab'); if(!t) return;
+  [].forEach.call(this.querySelectorAll('.tab'),function(c){c.classList.remove('active')});
+  t.classList.add('active'); STATE.activeTab=t.dataset.t;
+  document.body.classList.toggle('v-upload', STATE.activeTab==='upload');
+  if(STATE.activeTab==='upload'){ renderUpload(); focusScan(); } else renderTable();
+};
+document.getElementById('tbody').onchange=function(e){
+  var cb=e.target; if(!cb || cb.type!=='checkbox') return;
+  var sku=cb.getAttribute('data-sku'), tipe=cb.getAttribute('data-tipe'), checked=cb.checked;
+  var it=(STATE.results[tipe]||[]).filter(function(x){return String(x.skuFinal)===sku})[0];
+  if(it) it.checked=checked;
+  srv().withFailureHandler(function(){toast('⚠ gagal simpan centang')}).setChecked(sku,tipe,checked);
+  renderAll();
+};
+
+function doReset(){
+  askDialog({icon:'undo', red:true, title:'Reset sesi opname?',
+    text:'Semua temuan dan centang di sesi ini akan dihapus. Barang yang ditandai <b>Tidak diiklankan</b> tetap tersimpan.',
+    ok:'Ya, reset', okRed:true}, function(){ doResetNow(); });
+}
+function doResetNow(){
+  srv().withSuccessHandler(function(){
+    STATE.round=1; STATE.verified=false; STATE.newIssues=[];
+    STATE.results={opname:[],harga:[],tidak:[],belum:[]}; STATE.saved=[]; STATE.meta={};
+    document.getElementById('result').classList.add('hide');
+    document.getElementById('emptyState').classList.remove('hide');
+    document.getElementById('fileStatus').innerHTML='';
+    STATE.lastFile=''; STATE.lastRows=0; STATE.focus={opname:null, harga:null}; STATE.copied={};
+    renderAll();
+    document.getElementById('diagCard').classList.add('hide');
+    setStepUI(); toast('Sesi direset. Silakan upload file baru.');
+  }).withFailureHandler(function(e){ toast('⚠ gagal reset: '+escapeHtml(e.message)); }).resetSession();
+}
+
+// ============== util ==============
+function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+function dash(v){return v==null?'-':v;}
+function rupiah(v){ if(!v) return '-'; return 'Rp'+Number(v).toLocaleString('id-ID'); }
+function setText(id,v){ document.getElementById(id).textContent=v; }
+
+
+// ====== BARANG BARU MASUK (tab Data Base kolom M..Q, dibaca saja) ======
+function masukInfo(sku, cap){
+  var nm=katNama(sku); if(!nm) return null;
+  var key=normKey(nm), days=num(STATE.settings.masukDays)||7;
+  var d0=new Date(); d0.setHours(0,0,0,0); d0.setDate(d0.getDate()-(days-1));
+  var min=d0.getFullYear()+'-'+('0'+(d0.getMonth()+1)).slice(-2)+'-'+('0'+d0.getDate()).slice(-2);
+  var qty=0, by={};
+  (STATE.masuk||[]).forEach(function(r){
+    if(normKey(r[0])!==key || r[1]<min) return;
+    var k=r[1]+'|'+(r[3]||''); qty+=num(r[2]); by[k]=(by[k]||0)+num(r[2]);
+  });
+  // terbaru dulu; dibatasi stok katalog sekarang (barang masuk yang lebih lama dianggap sudah terjual)
+  var sisa=(cap==null)?Infinity:Math.max(0,num(cap)), dates=[]; qty=0;
+  Object.keys(by).sort().reverse().forEach(function(d){
+    if(sisa<=0) return; var q=Math.min(by[d],sisa); sisa-=q; qty+=q; var p=d.split('|'); dates.push({tgl:p[0], retur:p[1]==='r', qty:q});
+  });
+  return qty>0?{qty:qty, dates:dates}:null;
+}
+function tglPendek(iso){ var p=String(iso).split('-'); return parseInt(p[2],10)+'/'+parseInt(p[1],10); }
+function hariRel(iso){
+  var p=String(iso).split('-'), d=new Date(+p[0],+p[1]-1,+p[2]), t=new Date(); t.setHours(0,0,0,0);
+  var n=Math.round((t-d)/864e5);
+  return n<=0?'hari ini':n===1?'kemarin':n+' hari lalu';
+}
+// contoh: "📦 masuk hari ini +1 · 25/9 +1"
+// contoh: "📦 masuk hari ini +1 · ↩ return 25/9 +1"
+function masukText(m){
+  var part=function(retur){
+    var l=m.dates.filter(function(x){ return !!x.retur===retur; });
+    if(!l.length) return '';
+    var t=l.slice(0,3).map(function(x){ return hariRel(x.tgl)+' +'+x.qty; });
+    if(l.length>3) t.push('…');
+    return (retur?'↩ barang return ':'📦 barang masuk ')+t.join(' · ');
+  };
+  return [part(false),part(true)].filter(Boolean).join(' · ');
+}
+// label untuk Stok Opname: hanya kalau stok Shopee perlu DITAMBAH
+// kalimat label: "↩ Selisih ini dari barang return 3 hari lalu (+1)"
+function masukChip(m, lead, sisa){
+  var part=function(retur){
+    var l=m.dates.filter(function(x){ return !!x.retur===retur; });
+    if(!l.length) return '';
+    return (retur?'barang return ':'barang masuk ')+l.slice(0,3).map(function(x){ return hariRel(x.tgl)+' (+'+x.qty+')'; }).join(' & ')+(l.length>3?' …':'');
+  };
+  var pm=part(false), pr=part(true);
+  var txt=((pr && !pm)?'↩':'📦')+' '+lead+' <b>'+[pm,pr].filter(Boolean).join(' & ')+'</b>';
+  if(sisa>0) txt+=', sisa <b>'+sisa+'</b> perlu dicek';
+  return '<span class="chip ch-new" style="white-space:normal;font-weight:600">'+txt+'</span>';
+}
+// Stok Opname (dan barang yang dipindah dari Stok Opname): jelaskan selisih yang perlu DITAMBAH saja
+function masukChipOpname(it){
+  var diff=katalogNow(it)-shopeeNow(it); if(!(diff>0)) return '';
+  var m=masukInfo(it.skuFinal, diff); if(!m) return '';
+  return masukChip(m,'Selisih ini dari', diff-m.qty);
+}
+// Belum Diiklankan: di Shopee belum ada sama sekali -> jelaskan stok katalog
+function masukChipBelum(it){
+  if(isMoved(it)) return masukChipOpname(it);
+  var m=masukInfo(it.skuFinal, katalogNow(it)); if(!m) return '';
+  return masukChip(m,'Stok ini dari', 0);
+}
+
+// ====== nama katalog kecil (di bawah nama SKU) ======
+// nama katalog: dari katalog (stok ada) atau dari tab Upload Iklan (Auto) F<-K (termasuk yang stoknya habis)
+function katNama(sku){
+  var key=normKey(sku), k=STATE.katalogByKey[key];
+  return (k&&k.nama) || (STATE.namaMap||{})[key] || '';
+}
+function katSub(it){
+  var nm=katNama(it.skuFinal)||it.namaKatalog||'';
+  if(!nm || normKey(nm)===normKey(it.label)) return '';
+  return '<div class="katsub">katalog: '+escapeHtml(nm)+'</div>';
+}
+
+
+
+// =====================================================================
+//  UPLOAD IKLAN — scan kode barang, tulis ke tab "Upload Iklan (Auto)"
+// =====================================================================
+var UPQ_KEY='pgnet_upload_queue_v1', UPMP_KEY='pgnet_upload_mp';
+var UP={list:[], cur:null, busy:false, mp:'Shopee', retryT:null};
+if(!STATE.kodeMap){ STATE.kodeMap={}; STATE.kodeList=[]; }
+function setKodeMap(arr){ STATE.kodeList=arr||[]; var m={}; STATE.kodeList.forEach(function(r){ m[String(r[0]).trim()]=r[1]; }); STATE.kodeMap=m; }
+try{ var _mp=localStorage.getItem(UPMP_KEY); if(_mp) UP.mp=_mp; }catch(e){}
+
+var HARI_ID=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+var BULAN_ID=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+function tglTeksID(d){ d=d||new Date(); return HARI_ID[d.getDay()]+', '+('0'+d.getDate()).slice(-2)+' '+BULAN_ID[d.getMonth()]+' '+d.getFullYear(); }
+
+// --- tiruan rumus kolom K (Nama SKU) ---
+function sheetTrim(t){ return String(t==null?'':t).replace(/\s+/g,' ').trim(); }
+function skuDariNama(f){
+  var t=String(f||'').replace(/^(RAM|SSD|HDD|MB|VGA)\s*/i,'');
+  t=t.replace(/([0-9])-([0-9])/g,'$1♦$2').replace(/[()\-]/g,' ').replace(/♦/g,'-').replace(/\s+/g,' ');
+  return sheetTrim(t).slice(0,50);
+}
+// --- tiruan rumus kolom L (Nama Varian), input = Nama SKU ---
+function varianDariSku(nama){
+  if(!nama) return '';
+  var teks=sheetTrim(nama);
+  var m;
+  var kondisi=(m=teks.match(/\(?([0-9]{1,3}%)\)?/i))?m[1]:'';
+  var isRAM=/^(RAM\s+)?(LAPTOP|PC)\b/i.test(teks);
+  var isVgen=/\bV[\s-]*GEN\b/i.test(teks);
+  var isPlatinum=/^(RAM\s+)?(LAPTOP|PC)\b.*\bV[\s-]*GEN\s+PLATINUM\b/i.test(teks);
+  var ukuranSpeed=(m=teks.match(/(\d+\s*(?:GB|TB)\s+\d{3,5})/i))?m[1]:'';
+  var tanpaLabel=/TANPA LABEL/i.test(teks);
+  var nolHari=/\b0\s*DAYS?\b/i.test(teks);
+  var hariAngka=(m=teks.match(/\b([1-9][0-9]{0,4})\s*DAYS?\b/i))?m[1]:'';
+  var isSlim=/\bSLIM\b/i.test(teks);
+  var garansi=(m=teks.match(/GRS\s+[0-9]{2}\.[0-9]{4}/i))?m[0]:'';
+  var hapusJenis=teks.replace(/^(SSD\s+)?(NVME|SATA|3\.5"|2\.5"|RAM\s+LAPTOP|RAM\s+PC|LAPTOP|PC)\s+/i,'');
+  var hapusUkuran=hapusJenis.replace(/^(2230|2242)\s+/i,'').replace(/^DDR[345L]?\s+/i,'').replace(/^\d+\s*(GB|TB)\s+/i,'');
+  var hapusSpeed=isRAM?hapusUkuran.replace(/^\d{4,5}\s+/i,''):hapusUkuran;
+  var produk=sheetTrim(hapusSpeed.replace(/\(?[0-9]{1,3}%\)?|\b[0-9]{1,5}\s*DAYS?\b|TANPA LABEL|GRS\s+[0-9]{2}\.[0-9]{4}|\bSLIM\b/gi,'').replace(/^\s*-\s*/,''));
+  var produkRapih=sheetTrim(produk.replace(/V[\s-]*GEN/gi,'V-GeN').replace(/\bLAPTOP\s+THIN\b/gi,'LP Thin'));
+  var produkFinal=sheetTrim(produkRapih+(isSlim?' Slim':''));
+  var proper=function(x){ return x.toLowerCase().replace(/(^|[^a-z])([a-z])/g,function(a,b,c){ return b+c.toUpperCase(); }); };
+  if(isPlatinum) return ukuranSpeed+' (Platinum)';
+  if(isVgen) return '100%/'+kondisi+' ('+(garansi?proper(garansi):'Grs OFF')+')';
+  return produkFinal+(tanpaLabel
+    ? ' (Tanpa Label)'+(kondisi?' ('+kondisi+')':'')
+    : (kondisi?' ('+kondisi+')':'')+(nolHari?' (0 Days)':(hariAngka?' ('+hariAngka+' Days)':'')));
+}
+// harga marketplace = rumus kolom J (fee tetap seperti di sheet)
+function hargaMP(h){ return calcTarget(h,{fee1:5000,fee2:1250,pct:8.75,roundTo:1000}); }
+
+// data instan dari cache (sebelum sheet selesai menghitung)
+function upLocalData(kode){
+  var nama=STATE.kodeMap[kode]; if(!nama) return null;
+  var k=STATE.katalogByNama&&STATE.katalogByNama[normKey(nama)];
+  var sku=skuDariNama(nama);
+  return {nama:nama, qty:k?k.qty:0, harga:k?k.harga:0, hargaMP:k?hargaMP(k.harga):0, sku:sku, varian:varianDariSku(sku), katKey:k?k.key:''};
+}
+
+// --- antrian tulis ke sheet (disimpan di browser, dikirim di belakang) ---
+function upQueueLoad(){ try{ return JSON.parse(localStorage.getItem(UPQ_KEY)||'[]'); }catch(e){ return []; } }
+function upQueueSave(){ try{ localStorage.setItem(UPQ_KEY, JSON.stringify(UP.list.filter(function(x){ return x.st==='wait'||x.st==='err'; }).map(function(x){ return {id:x.id,kode:x.kode,mp:x.mp,tgl:x.tgl,ts:x.ts,done:!!x.done}; }))); }catch(e){} }
+function upKey(x){ return x.row?('r'+x.row+'|'+x.kode):('q'+x.id); }
+function upFind(key){ return UP.list.filter(function(x){ return upKey(x)===key; })[0]||null; }
+function upToday(){ return tglTeksID(new Date()); }
+
+(function upInitQueue(){
+  var today=upToday();
+  upQueueLoad().forEach(function(q){
+    var loc=upLocalData(q.kode)||{};
+    UP.list.push(Object.assign({id:q.id, kode:q.kode, mp:q.mp, tgl:q.tgl||today, ts:q.ts, st:'wait', done:!!q.done, doneLater:!!q.done}, loc));
+  });
+  if(UP.list.length) setTimeout(upPump, 1500);
+})();
+
+// gabungkan data sheet (hari ini) dengan antrian lokal yang belum terkirim
+function upMergeServer(rows){
+  var curKey=UP.cur;
+  var local=UP.list.filter(function(x){ return x.st==='wait'||x.st==='err'||x.st==='send'; });
+  var dq=(UP.delQ||[]);
+  var srv=(rows||[]).filter(function(r){ return !dq.some(function(q){ return q.kode===r.kode && q.row===r.row; }); })   // sedang dihapus -> jangan muncul lagi
+    .map(function(r){ var o=Object.assign({}, r); o.st='ok'; o.id='r'+r.row; return o; });
+  UP.list=srv.concat(local);
+  if(curKey && !upFind(curKey)) UP.cur=null;
+  if(STATE.activeTab==='upload') renderUpload(); else upBadge();
+}
+
+
+// ---- bukti dari file Shopee terakhir: kalau stok di Shopee sudah >= katalog, otomatis dianggap sudah diiklankan ----
+try{ var _sq=JSON.parse(localStorage.getItem('pgnet_shopee_qty')||'null'); if(_sq&&_sq.q){ STATE.shopeeQty=_sq.q; STATE.shopeeAt=_sq.at; } }catch(e){}
+function upShopee(it){
+  var Q=STATE.shopeeQty; if(!Q) return null;
+  var keys=[normKey(it.sku), it.katKey, normKey(skuDariNama(it.nama))].filter(Boolean), q=null;
+  keys.forEach(function(k){ if(q==null && Q[k]!=null) q=Q[k]; });
+  if(q==null) return null;
+  var kat=it.katKey&&STATE.katalogByKey[it.katKey];
+  var target=kat?kat.qty:num(it.qty);
+  return {q:q, target:target, ok:q>0 && q>=target};
+}
+function upIsDone(it){ if(it.done) return true; var s=upShopee(it); return !!(s&&s.ok); }
+
+function upBadge(){
+  upLamp();
+  var el=document.getElementById('cUpload'); if(!el) return;
+  var n=UP.list.length, rem=UP.list.filter(function(x){ return !upIsDone(x); }).length;
+  el.className='c';
+  if(!n){ el.textContent='0'; el.classList.add('z'); return; }
+  if(rem===0){ el.textContent='✓'; el.classList.add('ok'); return; }
+  el.textContent=rem;
+}
+
+function focusScan(){ var i=document.getElementById('scanIn'); if(i && STATE.activeTab==='upload' && !DLG.open && !CK.open) i.focus(); }
+function flashScan(ok){
+  var b=document.getElementById('scanBar'); b.classList.remove('flash-ok','flash-bad'); void b.offsetWidth;
+  b.classList.add(ok?'flash-ok':'flash-bad'); setTimeout(function(){ b.classList.remove('flash-ok','flash-bad'); }, 900);
+}
+
+function doScan(raw){
+  var kode=String(raw||'').replace(/\s+/g,'').trim();
+  if(!kode) return;
+  if(!/^[A-Za-z0-9\-]{3,30}$/.test(kode)){ flashScan(false); toast('⚠ Kode "'+escapeHtml(kode)+'" tidak valid.'); return; }
+  var loc=upLocalData(kode);
+  if(!loc){ flashScan(false); toast('⚠ Kode <b>'+escapeHtml(kode)+'</b> tidak ditemukan di Data Base. Tidak ada yang ditulis ke sheet.'); return; }
+  var today=upToday();
+  var dup=UP.list.filter(function(x){ return x.kode===kode && x.tgl===today; })[0];
+  var go=function(){
+    var it=Object.assign({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), kode:kode, mp:UP.mp, tgl:today, ts:Date.now(), st:'wait', done:false}, loc);
+    UP.list.push(it); UP.cur=upKey(it); upQueueSave();
+    flashScan(true); renderUpload(); upPump();
+  };
+  if(dup){
+    askDialog({icon:'scan', title:'Kode ini sudah di-scan hari ini', name:loc.nama,
+      text:'Kode <b>'+escapeHtml(kode)+'</b> sudah tercatat'+(dup.row?' di baris '+dup.row:'')+'. Tulis lagi sebagai baris baru?',
+      ok:'Tulis lagi'}, function(){ go(); focusScan(); });
+    UP.cur=upKey(dup); renderUpload();
+    return;
+  }
+  go();
+}
+
+// kirim antrian satu per satu (di belakang)
+function upPump(){
+  if(UP.busy) return;
+  var it=UP.list.filter(function(x){ return x.st==='wait'; })[0];
+  if(!it) return;
+  UP.busy=true; it.st='send'; renderUploadSoft();
+  var oldKey=upKey(it);
+  srv().withSuccessHandler(function(r){
+    UP.busy=false;
+    var wasCur=(UP.cur===oldKey);
+    it.st='ok'; it.row=r.row; it.tgl=r.tgl||it.tgl;
+    if(it.cancel){ UP.delQ.push({row:it.row, kode:it.kode, tgl:it.tgl}); upDelSave(); upQueueSave(); upDelPump(); upPump(); return; }
+    upApplySheet(it, r);
+    if(wasCur) UP.cur=upKey(it);
+    upQueueSave(); renderUploadSoft();
+    if(!r.sku || !r.nama){ setTimeout(function(){ upRefetch(it); }, 2500); }   // rumus sheet telat -> baca ulang
+    if(it.doneLater){ it.doneLater=false; var dv=!!it.done; srv().withFailureHandler(function(){ it.done=!dv; renderUploadSoft(); }).setUploadDone(it.kode, it.tgl, dv); }
+    upPump();
+  }).withFailureHandler(function(e){
+    UP.busy=false; it.st='err'; it.err=e&&e.message||'gagal'; upQueueSave(); renderUploadSoft();
+    clearTimeout(UP.retryT); UP.retryT=setTimeout(function(){ UP.list.forEach(function(x){ if(x.st==='err') x.st='wait'; }); upPump(); }, 10000);
+  }).uploadScan({id:it.id, kode:it.kode, mp:it.mp});
+}
+function upApplySheet(it, r){
+  if(r.nama && r.nama!=='Kode ID tidak ditemukan') it.nama=r.nama;
+  if(r.nama==='Kode ID tidak ditemukan') it.notFound=true;
+  if(r.sku) it.sku=r.sku;
+  if(r.varian) it.varian=r.varian;
+  if(r.qty!=null && r.nama) it.qty=r.qty;
+  if(r.hargaMP!=null && r.nama) it.hargaMP=r.hargaMP;
+  if(r.harga!=null && r.nama) it.harga=r.harga;
+}
+function upRefetch(it){
+  if(!it.row) return;
+  srv().withSuccessHandler(function(r){ if(r){ upApplySheet(it,r); renderUploadSoft(); } }).readUploadRow(it.row, it.kode);
+}
+function upRetry(){ UP.list.forEach(function(x){ if(x.st==='err') x.st='wait'; }); upPump(); }
+
+function upSetDone(key, val){
+  var it=upFind(key); if(!it) return;
+  it.done=val; renderUpload();
+  if(it.st!=='ok'){ it.doneLater=true; upQueueSave(); if(val){ var nx=UP.list.filter(function(x){ return !upIsDone(x); }).slice(-1)[0]; if(nx) UP.cur=upKey(nx); renderUpload(); } return; }   // dikirim setelah barisnya tersimpan
+  if(val){
+    // lanjut ke barang berikutnya yang belum selesai
+    var next=UP.list.filter(function(x){ return !upIsDone(x); }).slice(-1)[0];
+    if(next) UP.cur=upKey(next);
+    renderUpload();
+  }
+  srv().withFailureHandler(function(){ it.done=!val; renderUpload(); toast('⚠ gagal menyimpan tanda'); }).setUploadDone(it.kode, it.tgl, val);
+}
+
+// Hapus langsung hilang dari layar; penghapusan baris di sheet berjalan di belakang
+var UPDEL_KEY='pgnet_upload_del_v1';
+UP.delQ=(function(){ try{ return JSON.parse(localStorage.getItem(UPDEL_KEY)||'[]'); }catch(e){ return []; } })();
+UP.delBusy=false;
+function upDelSave(){ try{ localStorage.setItem(UPDEL_KEY, JSON.stringify(UP.delQ)); }catch(e){} }
+function upDelete(key){
+  var it=upFind(key); if(!it) return;
+  askDialog({icon:'undo', red:true, title:'Hapus scan ini?', name:it.nama||it.kode,
+    text:it.row?'Baris <b>'+it.row+'</b> di tab Upload Iklan (Auto) akan dihapus.':'Scan ini dibatalkan dan tidak akan ditulis ke sheet.',
+    ok:'Ya, hapus', okRed:true}, function(){
+      var idx=UP.list.indexOf(it); if(idx>=0) UP.list.splice(idx,1);
+      if(UP.cur===key){ var nx=UP.list.filter(function(x){ return !upIsDone(x); }).slice(-1)[0]; UP.cur=nx?upKey(nx):null; }
+      if(it.st==='wait'||it.st==='err'){ upQueueSave(); }                       // belum sempat ditulis -> cukup dibuang dari antrian
+      else if(it.st==='send'){ it.cancel=true; }                                // sedang ditulis -> dihapus setelah selesai
+      else { UP.delQ.push({row:it.row, kode:it.kode, tgl:it.tgl}); upDelSave(); upDelPump(); }
+      renderUpload(); focusScan();
+      toast('Scan <b>'+escapeHtml(it.kode)+'</b> dihapus.');
+    });
+}
+function upDelPump(){
+  if(UP.delBusy || !UP.delQ.length) { upLamp(); return; }
+  UP.delBusy=true; upLamp();
+  var j=UP.delQ[0];
+  srv().withSuccessHandler(function(r){
+    UP.delBusy=false; UP.delQ.shift(); upDelSave();
+    var dr=r.row;
+    UP.list.forEach(function(x){ if(x.row && x.row>dr) x.row--; });        // baris di bawahnya naik satu
+    UP.delQ.forEach(function(q){ if(q.row>dr) q.row--; });
+    renderUploadSoft(); upDelPump();
+  }).withFailureHandler(function(e){
+    UP.delBusy=false;
+    if(/tidak ditemukan/i.test(e.message||'')){ UP.delQ.shift(); upDelSave(); upDelPump(); return; }   // sudah terhapus
+    j.err=true; upLamp();
+    setTimeout(function(){ j.err=false; upDelPump(); }, 10000);
+  }).deleteScan(j.row, j.kode, j.tgl);
+}
+setTimeout(upDelPump, 2000);   // lanjutkan hapus yang tertunda dari sesi sebelumnya
+
+// ====== lampu simpan ke sheet (satu-satunya tanda proses di belakang) ======
+var LAMP={hadWork:false, t:null};
+function upLamp(){
+  var el=document.getElementById('syncLamp'); if(!el) return;
+  var pend=UP.list.filter(function(x){ return x.st==='wait'||x.st==='send'; }).length;
+  var err=UP.list.filter(function(x){ return x.st==='err'; }).length + (UP.delQ||[]).filter(function(q){ return q.err; }).length;
+  var dels=(UP.delQ||[]).length;
+  var tx=el.querySelector('span');
+  if(err||pend||dels) clearTimeout(LAMP.t);
+  if(err){ el.className='lamp err'; tx.textContent='gagal simpan '+err+' · dicoba lagi'; el.title='Klik untuk coba sekarang'; LAMP.hadWork=true; return; }
+  if(pend||dels){ el.className='lamp'; tx.textContent=pend?('menyimpan '+pend+' ke sheet'+(dels?' · menghapus '+dels:'')):('menghapus '+dels+' dari sheet'); el.title=''; LAMP.hadWork=true; return; }
+  if(LAMP.hadWork){ LAMP.hadWork=false; el.className='lamp ok'; tx.textContent='tersimpan'; LAMP.t=setTimeout(function(){ el.className='lamp ok hide'; }, 2500); return; }
+  if(el.className==='lamp ok') return;               // 'tersimpan' sedang tampil, biarkan timer yang menyembunyikan
+  if(!/hide/.test(el.className)) el.className='lamp hide';
+}
+
+function renderUploadSoft(){ if(STATE.activeTab==='upload') renderUpload(); else upBadge(); }
+function mpChip(mp){ return mp?'<span class="chip ch-mp'+(mp.indexOf('Tokopedia')>=0?' tp':'')+'">'+escapeHtml(mp)+'</span>':''; }
+function upCopyBtn(text, kind){ var c=STATE.copied&&STATE.copied.up===UP.cur&&STATE.copied['up_'+kind]; return '<button class="cp'+(c?' copied':'')+'" data-upcopy="'+escapeHtml(text)+'" data-kind="'+kind+'">'+ic(c?'check':'copy')+(c?'Tersalin':'Salin')+'</button>'; }
+
+function renderUpload(){
+  upBadge();
+  var seg=document.getElementById('mpSeg');
+  [].forEach.call(seg.children,function(c){ c.classList.toggle('on', c.getAttribute('data-mp')===UP.mp); });
+  // kartu utama
+  var it=UP.cur?upFind(UP.cur):null, card=document.getElementById('upCard');
+  if(!it){
+    card.innerHTML='<div class="upc empty"><div class="big">📦</div><b>Scan kode barang untuk mulai</b><div style="margin-top:6px;font-size:13px">Nama SKU, varian, harga, dan stok akan muncul di sini.</div></div>';
+  }else{
+    if(STATE.copied.up!==UP.cur) STATE.copied={up:UP.cur};
+    var sync = it.st==='ok' ? '<span class="rowinfo">· baris '+it.row+'</span>'
+      : it.st==='del' ? '<span class="rowinfo"><span class="spin"></span> menghapus…</span>' : '';
+    var v=function(x,load){ return x?'<span class="v">'+escapeHtml(x)+'</span>':'<span class="v load">'+(load||'menunggu sheet…')+'</span>'; };
+    var info='';
+    if(it.katKey){ var m=masukInfo(it.katKey, it.qty); if(m) info+=masukChip(m,'Stok ini dari',0); }
+    if(!(it.qty>0)) info+='<span class="chip ch-warn">Stok katalog 0 — barang ini mungkin sudah laku</span>';
+    info+=mpChip(it.mp);
+    card.innerHTML='<div class="upc">'+
+      '<div class="top"><span class="kode">KODE '+escapeHtml(it.kode)+'</span>'+sync+'</div>'+
+      '<h3>'+escapeHtml(it.nama||'—')+'</h3>'+
+      '<div class="ln"><div class="num">1</div><div class="box"><span class="k">Nama SKU</span>'+v(it.sku)+(it.sku?upCopyBtn(it.sku,'sku'):'')+'</div></div>'+
+      '<div class="ln"><div class="num">2</div><div class="box"><span class="k">Varian</span>'+v(it.varian)+(it.varian?upCopyBtn(it.varian,'var'):'')+'</div></div>'+
+      '<div class="ln"><div class="num">3</div><div class="box hl"><span class="k">Harga</span>'+(it.hargaMP?'<span class="v">'+rupiah(it.hargaMP)+'</span>'+upCopyBtn(String(Math.round(it.hargaMP)),'price'):'<span class="v load">harga katalog kosong</span>')+'</div></div>'+
+      '<div class="ln"><div class="num">4</div><div class="box hl"><span class="k">Stok</span><span class="v">'+num(it.qty)+' <small class="muted" style="font-size:13px">pcs</small></span></div></div>'+
+      '<div class="info">'+info+'</div>'+
+      (function(){ var sp=upShopee(it);
+        if(sp&&sp.ok) return '<div class="donebar">✓ Sudah ada di Shopee · stok '+sp.q+' <span style="font-weight:600">(file Shopee '+timeAgo(STATE.shopeeAt)+')</span></div>';
+        if(it.done) return '<div class="donebar">✓ Sudah diiklankan</div>';
+        if(sp) return '<div class="donebar" style="background:#FFF1DC;color:#9A5B00">Di Shopee baru <b>'+sp.q+'</b> pcs, katalog '+sp.target+' pcs — stok perlu ditambah <span style="font-weight:600">(file Shopee '+timeAgo(STATE.shopeeAt)+')</span></div>';
+        return ''; })()+
+      '<div class="btns">'+
+        (upShopee(it)&&upShopee(it).ok?'':it.done?'<button class="btn-ghost" data-updone="0">'+ic('undo')+'Batalkan tanda</button>'
+                :'<button class="btn" data-updone="1">✓ Sudah diiklankan</button>')+
+        '<button class="btn-ghost" data-updel="1">Hapus scan ini</button>'+
+      '</div></div>';
+  }
+  // daftar hari ini: kotak centang hijau = sudah, panah oranye = perlu diupload
+  var L=UP.list.slice().reverse(), done=UP.list.filter(upIsDone).length, n=UP.list.length;
+  var list='<div class="qh2">Di-scan hari ini<span class="big">'+done+'</span><small>/ '+n+' sudah di Shopee</small></div>'+
+    '<div class="qprog"><i style="width:'+(n?Math.round(done/n*100):0)+'%"></i></div>'+
+    '<div class="qnote">Centang otomatis kalau stoknya sudah ada di file Shopee terakhir'+(STATE.shopeeAt?' ('+timeAgo(STATE.shopeeAt)+')':' — belum ada file')+'.</div>';
+  if(!L.length) list+='<div class="qempty">Belum ada scan hari ini.</div>';
+  list+=L.map(function(x){
+    var k=upKey(x), cls=['qi'], sp=upShopee(x), ok=upIsDone(x); if(k===UP.cur) cls.push('on'); if(ok) cls.push('done'); if(x.st==='err') cls.push('err');
+    var icon, sub;
+    var where=x.row?'baris '+x.row:'hari ini';
+    if(ok){
+      icon='<span class="qic ok">✓</span>';
+      sub=where+' · <b class="st-ok">'+(sp&&sp.ok?'sudah di Shopee · stok '+sp.q:'sudah diiklankan')+'</b>';
+    }else{
+      icon='<span class="qic up"><svg class="i"><use href="#i-arrow"/></svg></span>';
+      sub=where+' · <span class="st-up">perlu diupload</span>'+(sp?' · di Shopee baru '+sp.q:'');
+    }
+    return '<div class="'+cls.join(' ')+'" data-upgo="'+escapeHtml(k)+'">'+icon+'<span class="nmq">'+escapeHtml(x.nama||x.kode)+'<small>'+sub+'</small></span><span class="qq">'+num(x.qty)+'</span></div>';
+  }).join('');
+  document.getElementById('upList').innerHTML=list;
+}
+
+// --- event ---
+(function(){
+  var inp=document.getElementById('scanIn'), bar=document.getElementById('scanBar');
+  inp.addEventListener('focus',function(){ bar.classList.add('focus'); });
+  inp.addEventListener('blur',function(){ bar.classList.remove('focus'); });
+  inp.addEventListener('keydown',function(e){
+    if(e.key!=='Enter') return;
+    e.preventDefault();
+    var v=inp.value; inp.value='';
+    if(v.trim()) doScan(v);
+    else if(UP.cur){ var it=upFind(UP.cur); if(it && !upIsDone(it)) upSetDone(UP.cur,true); }
+  });
+  document.getElementById('mpSeg').addEventListener('click',function(e){
+    var s=e.target.closest('[data-mp]'); if(!s) return;
+    UP.mp=s.getAttribute('data-mp'); try{ localStorage.setItem(UPMP_KEY, UP.mp); }catch(x){}
+    renderUpload(); focusScan();
+  });
+  document.getElementById('upView').addEventListener('click',function(e){
+    var h;
+    if((h=e.target.closest('[data-upcopy]'))){
+      var t=h.getAttribute('data-upcopy'), kind=h.getAttribute('data-kind');
+      var ok=function(){ STATE.copied.up=UP.cur; STATE.copied['up_'+kind]=true; renderUpload(); toast('📋 <b>'+escapeHtml(t)+'</b> disalin.'); focusScan(); };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok,function(){ fallbackCopy(t); ok(); }); else { fallbackCopy(t); ok(); }
+      return;
+    }
+    if((h=e.target.closest('[data-upgo]'))){ UP.cur=h.getAttribute('data-upgo'); renderUpload(); focusScan(); return; }
+    if((h=e.target.closest('[data-updone]'))){ upSetDone(UP.cur, h.getAttribute('data-updone')==='1'); focusScan(); return; }
+    if(e.target.closest('[data-updel]')){ upDelete(UP.cur); return; }
+    if(e.target.closest('[data-upretry]') || e.target.closest('#syncLamp.err')){ upRetry(); return; }
+    if(!e.target.closest('button,a,input')) focusScan();
+  });
+})();
+
+
+// ====== sidebar bisa diciutkan ======
+function applySide(mini){
+  document.body.classList.toggle('side-mini', mini);
+  var b=document.querySelector('.sidetog'); if(b) b.title=mini?'Buka sidebar (Ctrl+B)':'Ciutkan sidebar (Ctrl+B)';
+  try{ localStorage.setItem('pgnet_side_mini', mini?'1':'0'); }catch(e){}
+}
+function toggleSide(){ applySide(!document.body.classList.contains('side-mini')); }
+(function(){
+  // tooltip nama tab (terlihat saat sidebar diciutkan)
+  [].forEach.call(document.querySelectorAll('#tabs .nav'),function(n){ var t=n.querySelector('.t'); if(t) n.title=t.childNodes[0].textContent.trim(); });
+  try{ if(localStorage.getItem('pgnet_side_mini')==='1') applySide(true); }catch(e){}
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey) && !e.shiftKey && !e.altKey && (e.key==='b'||e.key==='B')){ e.preventDefault(); toggleSide(); }
+  });
+})();
+
+// ====== dialog di dalam aplikasi (pengganti prompt/confirm bawaan browser) ======
+var DLG={open:false, cb:null};
+// o: {icon, red, title, name, text, qty, input, placeholder, ok, okRed}
+function askDialog(o, cb){
+  DLG.open=true; DLG.cb=cb; DLG.o=o;
+  var body='';
+  if(o.name) body+='<span class="nm">'+escapeHtml(o.name)+'</span>';
+  if(o.text) body+='<div style="margin-bottom:'+((o.qty!=null||o.input)?'12px':'0')+'">'+o.text+'</div>';
+  if(o.qty!=null) body+='<label>'+(o.qtyLabel||'Jumlah')+'</label><div class="step"><button data-dq="-1" type="button">−</button><input id="dlgVal" type="number" min="1" step="1" value="'+o.qty+'"><button data-dq="1" type="button">+</button></div>';
+  if(o.input) body+='<label>'+o.input+'</label><input class="tx" id="dlgVal" type="text" placeholder="'+escapeHtml(o.placeholder||'')+'">';
+  document.getElementById('dlgBox').innerHTML=
+    '<div class="dh"><div class="di'+(o.red?' red':'')+'">'+(o.icon?ic(o.icon):'?')+'</div><b>'+o.title+'</b></div>'+
+    '<div class="db">'+body+'</div>'+
+    '<div class="mf"><button class="btn-ghost" data-dno="1">Batal</button><button class="btn'+(o.okRed?' red':'')+'" data-dok="1">'+(o.ok||'OK')+'</button></div>';
+  document.getElementById('dlgShade').classList.remove('hide');
+  var v=document.getElementById('dlgVal'); setTimeout(function(){ (v||document.querySelector('#dlgBox [data-dok]')).focus(); if(v&&v.select) v.select(); },30);
+}
+function closeDialog(ok){
+  if(!DLG.open) return;
+  var v=document.getElementById('dlgVal'), cb=DLG.cb, o=DLG.o;
+  var val=v?v.value:true;
+  if(ok && o.qty!=null){ val=Math.max(1, Math.round(num(val))||1); }
+  DLG.open=false; DLG.cb=null; document.getElementById('dlgShade').classList.add('hide');
+  if(ok && cb) cb(val);
+}
+document.addEventListener('click',function(e){
+  if(!DLG.open) return;
+  var h;
+  if(e.target.id==='dlgShade' || e.target.closest('[data-dno]')){ closeDialog(false); return; }
+  if(e.target.closest('[data-dok]')){ closeDialog(true); return; }
+  if((h=e.target.closest('[data-dq]'))){ var v=document.getElementById('dlgVal'); v.value=Math.max(1,(Math.round(num(v.value))||1)+parseInt(h.getAttribute('data-dq'),10)); return; }
+},true);
+document.addEventListener('keydown',function(e){
+  if(!DLG.open) return;
+  if(e.key==='Escape'){ e.preventDefault(); closeDialog(false); }
+  else if(e.key==='Enter'){ e.preventDefault(); closeDialog(true); }
+  e.stopImmediatePropagation();
+},true);
+
+// ====== POP-UP "CEK KATALOG" (pakai cache katalog, tanpa saran "mirip") ======
+var CK={open:false, sku:null, tipe:null, busy:false};
+function cekBtn(it, big){
+  return '<button class="ib cek'+(big?' big':'')+'" data-cek="'+escapeHtml(it.skuFinal)+'" data-tipe="'+it.tipe+'" title="Cek katalog">'+ic('search')+'</button>';
+}
+function natCmp(a,b){ return String(a).localeCompare(String(b),'id',{numeric:true,sensitivity:'base'}); }
+function cekItem(){
+  var arr=(STATE.results[CK.tipe]||[]);
+  return arr.filter(function(x){ return String(x.skuFinal)===String(CK.sku); })[0]||null;
+}
+function openCek(sku, tipe){ CK.open=true; CK.sku=sku; CK.tipe=tipe; renderCek(); document.getElementById('ckShade').classList.remove('hide'); }
+function closeCek(){ CK.open=false; document.getElementById('ckShade').classList.add('hide'); }
+function katRowsByKey(){
+  // satu baris per SKU katalog (qty dijumlah), urut alami
+  var arr=Object.keys(STATE.katalogByKey).map(function(k){ var v=STATE.katalogByKey[k]; return {key:k, nama:v.nama, qty:v.qty, harga:v.harga, kat:v.kat||''}; });
+  arr.sort(function(a,b){ return natCmp(a.key,b.key); });
+  return arr;
+}
+function commonPrefix(a,b){ var n=0; while(n<a.length && n<b.length && a[n]===b[n]) n++; return n; }
+function renderCek(){
+  var box=document.getElementById('ckBox'); if(!box) return;
+  var it=cekItem(); var sku=CK.sku, key=normKey(sku);
+  var label=it?it.label:sku;
+  var found=STATE.katalogByKey[key];
+  var all=katRowsByKey();
+
+  // tentukan kelompok (kategori) dari tetangga terdekat
+  var pos=0; while(pos<all.length && natCmp(all[pos].key,key)<0) pos++;
+  var kat='';
+  if(found) kat=found.kat||'';
+  else{
+    var a=all[pos-1], b=all[pos];
+    var pa=a?commonPrefix(a.key,key):-1, pb=b?commonPrefix(b.key,key):-1;
+    kat=(pb>pa?(b&&b.kat):(a&&a.kat))||'';
+  }
+  var pool=kat?all.filter(function(r){return r.kat===kat;}):all;
+  var p2=0; while(p2<pool.length && natCmp(pool[p2].key,key)<0) p2++;
+  var before=pool.slice(Math.max(0,p2-3),p2);
+  var after=pool.slice(p2+(found&&pool[p2]&&pool[p2].key===key?1:0), p2+(found?1:0)+3);
+
+  var row=function(r,cls,note){
+    return '<div class="ckr '+(cls||'')+'"><div class="nm">'+escapeHtml(r.nama||r.key)+(note||'')+'</div><span class="q">'+r.qty+'</span><span class="h">'+(r.harga?rupiah(r.harga):'—')+'</span></div>';
+  };
+  var rows=before.map(function(r){return row(r);}).join('');
+  if(found) rows+=row({key:key,nama:found.nama,qty:found.qty,harga:found.harga},'me',' <span style="font-weight:600">← ini dia</span>');
+  else var gName=katNama(sku);
+  rows+='<div class="ckr ghost"><div class="nm">'+(gName?escapeHtml(gName):'Tidak ada di katalog')+' <span style="font-weight:600">← '+(gName?'stok habis, ':'')+'seharusnya di sini</span></div><span class="q">—</span><span class="h">—</span></div>';
+  rows+=after.map(function(r){return row(r);}).join('');
+
+  var shopee=it?shopeeNow(it):0;
+  var verdict, note='';
+  if(!found){
+    var gN=katNama(sku);
+    verdict='<div class="verdict v-ok"><div class="ic">✓</div><div><b>'+(gN?'Stok di katalog habis':'Tidak ada di katalog')+'</b><span>'+(gN?'Barang ini ada namanya di katalog, tapi stoknya 0.':'Barang ini tidak tercatat di katalog.')+
+      (CK.tipe==='tidak'?' Aman dikosongkan di Shopee.':'')+'</span></div></div>';
+    if(CK.tipe==='tidak') note='Stok di Shopee sekarang: <b>'+shopee+'</b> → ubah jadi <b>0</b>.';
+  }else if(CK.tipe==='tidak' && found.qty>0){
+    verdict='<div class="verdict v-warn"><div class="ic">!</div><div><b>Ternyata ada di katalog · stok '+found.qty+'</b><span>Katalog sudah diperbarui sejak upload. Jangan dikosongkan dulu — upload ulang file Shopee.</span></div></div>';
+  }else if(CK.tipe==='tidak'){
+    verdict='<div class="verdict v-ok"><div class="ic">✓</div><div><b>Stok di katalog 0</b><span>Aman dikosongkan di Shopee.</span></div></div>';
+    note='Stok di Shopee sekarang: <b>'+shopee+'</b> → ubah jadi <b>0</b>.';
+  }else{
+    verdict='<div class="verdict v-ok"><div class="ic">✓</div><div><b>Stok di katalog: '+found.qty+'</b><span>Stok Shopee sekarang '+shopee+' → ubah jadi <b style="display:inline;font-size:13px">'+found.qty+'</b>.</span></div></div>';
+  }
+
+  var upd='<div class="upd">'+(CK.busy?'<span class="spin"></span> menyegarkan katalog…':
+    ('katalog diperbarui '+(STATE.katalogAt?timeAgo(STATE.katalogAt):'-')+' · <a data-ckref="1">🔄 refresh</a>'))+'</div>';
+
+  var canCheck=it && !(CK.tipe==='tidak' && found && found.qty>0);
+  var foot='<div class="mf">'+
+    (canCheck ? (it.checked
+        ? '<button class="btn-ghost" data-ckcheck="0">'+ic('undo')+'Batalkan centang</button>'
+        : '<button class="btn g" data-ckcheck="1">'+(CK.tipe==='tidak'?'✓ Sudah dikosongkan, centang':'✓ Sudah diubah, centang')+'</button>') : '')+
+    '<button class="btn-ghost" data-ckclose="1">Tutup</button></div>';
+
+  box.innerHTML='<div class="mh">'+ic('search')+'<span class="t">Cek katalog · '+escapeHtml(label)+'</span><button class="x" data-ckclose="1" title="Tutup (Esc)">✕</button></div>'+
+    upd+'<div class="mb">'+verdict+
+    '<div class="sec">Katalog di sekitarnya'+(kat?' <em>· '+escapeHtml(kat)+'</em>':'')+'</div>'+
+    '<div class="ckk">'+(kat?'<div class="ckg">▶ '+escapeHtml(kat)+'</div>':'')+rows+'</div>'+
+    (note?'<div class="note2">'+note+'</div>':'')+'</div>'+foot;
+}
+function cekSetChecked(val){
+  var it=cekItem(); if(!it) return;
+  closeCek();
+  if((it.tipe==='opname') && STATE.activeTab==='opname' && STATE.focus.opname===it.skuFinal){ focusSetChecked(val); return; }
+  it.checked=val;
+  srv().withFailureHandler(function(){ toast('⚠ gagal simpan centang'); }).setChecked(it.skuFinal,it.tipe,val);
+  if(val && it.tipe==='opname') advanceFocus('opname',it.skuFinal);
+  renderAll();
+  if(val) toast('✓ '+escapeHtml(it.label)+' dicentang.');
+}
+document.addEventListener('click',function(e){
+  var h;
+  if((h=e.target.closest('[data-cek]'))){ e.stopPropagation(); openCek(h.getAttribute('data-cek'), h.getAttribute('data-tipe')); return; }
+  if(!CK.open) return;
+  if(e.target.id==='ckShade' || e.target.closest('[data-ckclose]')){ closeCek(); return; }
+  if(e.target.closest('[data-ckref]')){ manualRefresh(); return; }
+  if((h=e.target.closest('[data-ckcheck]'))){ cekSetChecked(h.getAttribute('data-ckcheck')==='1'); return; }
+},true);
+document.addEventListener('keydown',function(e){
+  if(!CK.open) return;
+  if(e.key==='Escape'){ closeCek(); }
+  e.stopImmediatePropagation();
+},true);
+
+function escapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+var toastTimer;
+function toast(msg,keep){
+  var t=document.getElementById('toast'); t.innerHTML=msg; t.classList.add('show');
+  clearTimeout(toastTimer); if(!keep) toastTimer=setTimeout(function(){t.classList.remove('show')},3500);
+}
+</script>
+</body>
+</html>
