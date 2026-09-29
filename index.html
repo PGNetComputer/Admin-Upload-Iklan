@@ -384,6 +384,12 @@
   .upq .st-ok{color:var(--greenTx)}
   .upq .st-up{color:#C2461F;font-weight:700}
   .upq .qempty{padding:18px 14px;color:var(--muted);font-size:13px;text-align:center}
+  .upq .qbody{max-height:calc(100vh - 345px);overflow:auto}
+  .upq .qbody::-webkit-scrollbar{width:8px}.upq .qbody::-webkit-scrollbar-thumb{background:#E6DAD0;border-radius:8px}
+  .upq .qsec{position:sticky;top:0;z-index:1;padding:7px 14px;font-size:11px;font-weight:800;color:#8a7f70;letter-spacing:.06em;text-transform:uppercase;background:#FCF8F4;border-bottom:1px solid var(--line)}
+  .upq .qfold{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#F2FAF5;color:var(--greenTx);font-weight:800;cursor:pointer;border-bottom:1px solid var(--line);user-select:none}
+  .upq .qfold:hover{background:#E8F6EE}
+  .upq .qfold em{margin-left:auto;font-style:normal;font-size:12px;font-weight:700;color:#4c9a73}
 
   /* ===== sidebar bisa diciutkan (Ctrl+B) ===== */
   .app{transition:grid-template-columns .25s ease}
@@ -2082,8 +2088,7 @@ function renderUpload(){
   var list='<div class="qh2">Di-scan hari ini<span class="big">'+done+'</span><small>/ '+n+' sudah di Shopee</small></div>'+
     '<div class="qprog"><i style="width:'+(n?Math.round(done/n*100):0)+'%"></i></div>'+
     '<div class="qnote">Centang otomatis kalau stoknya sudah ada di file Shopee terakhir'+(STATE.shopeeAt?' ('+timeAgo(STATE.shopeeAt)+')':' — belum ada file')+'.</div>';
-  if(!L.length) list+='<div class="qempty">Belum ada scan hari ini.</div>';
-  list+=L.map(function(x){
+  function row(x){
     var k=upKey(x), cls=['qi'], sp=upShopee(x), ok=upIsDone(x); if(k===UP.cur) cls.push('on'); if(ok) cls.push('done'); if(x.st==='err') cls.push('err');
     var icon, sub;
     var where=x.row?'baris '+x.row:'hari ini';
@@ -2095,8 +2100,25 @@ function renderUpload(){
       sub=where+' · <span class="st-up">perlu diupload</span>'+(sp?' · di Shopee baru '+sp.q:'');
     }
     return '<div class="'+cls.join(' ')+'" data-upgo="'+escapeHtml(k)+'">'+icon+'<span class="nmq">'+escapeHtml(x.nama||x.kode)+'<small>'+sub+'</small></span><span class="qq">'+num(x.qty)+'</span></div>';
-  }).join('');
+  }
+  // yang belum diupload selalu di atas; yang sudah beres dilipat jadi satu baris
+  var bel=L.filter(function(x){ return !upIsDone(x); }), sud=L.filter(upIsDone);
+  var body='';
+  if(!L.length) body+='<div class="qempty">Belum ada scan hari ini.</div>';
+  else{
+    if(bel.length) body+='<div class="qsec">Perlu diupload · '+bel.length+'</div>'+bel.map(row).join('');
+    else body+='<div class="qempty">Semua scan hari ini sudah di Shopee 🎉</div>';
+    if(sud.length){
+      var fold=UP.fold!==false;
+      var curDone=fold && UP.cur ? sud.filter(function(x){ return upKey(x)===UP.cur; })[0] : null;
+      if(curDone) body+=row(curDone);   // barang yang sedang dibuka tetap terlihat
+      body+='<div class="qfold" data-upfold="1"><span>✓ '+sud.length+' sudah diiklankan</span><em>'+(fold?'Lihat ▾':'Tutup ▴')+'</em></div>';
+      if(!fold) body+=sud.map(row).join('');
+    }
+  }
+  list+='<div class="qbody">'+body+'</div>';
   document.getElementById('upList').innerHTML=list;
+  var onEl=document.querySelector('#upList .qi.on'); if(onEl) onEl.scrollIntoView({block:'nearest'});
 }
 
 // --- event ---
@@ -2124,6 +2146,7 @@ function renderUpload(){
       if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok,function(){ fallbackCopy(t); ok(); }); else { fallbackCopy(t); ok(); }
       return;
     }
+    if((h=e.target.closest('[data-upfold]'))){ UP.fold=(UP.fold===false); renderUpload(); focusScan(); return; }
     if((h=e.target.closest('[data-upgo]'))){ UP.cur=h.getAttribute('data-upgo'); renderUpload(); focusScan(); return; }
     if((h=e.target.closest('[data-updone]'))){ upSetDone(UP.cur, h.getAttribute('data-updone')==='1'); focusScan(); return; }
     if(e.target.closest('[data-updel]')){ upDelete(UP.cur); return; }

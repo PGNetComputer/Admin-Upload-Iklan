@@ -1,5 +1,5 @@
 // NAIKKAN angka versi ini setiap kali index.html berubah
-var CACHE = 'stokopname-v2';
+var CACHE = 'stokopname-v3';
 var ASET = ['./', 'index.html', 'config.js', 'manifest.json', 'ikon-192.png', 'ikon-512.png'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASET); }).then(function () { return self.skipWaiting(); }));
